@@ -1,0 +1,177 @@
+/* Conteneur principal */
+.login-container {
+    display: flex;
+    justify-content: center; /* Centrer horizontalement */
+    align-items: center; /* Centrer verticalement */
+    background-color: #f4f4f4;
+    font-family: 'Arial', sans-serif;
+    margin: 0; /* Enlève les marges autour de la page */
+    height: 100vh; /* La page prend toute la hauteur */
+    flex-wrap: wrap; /* Permet de s'adapter à différentes tailles */
+    gap: 1px; /* Ajout d'un espacement entre les éléments */
+}
+
+/* Boîte de connexion */
+.login-box {
+    background-color: #ffffff;
+    padding: 30px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 50%; /* Ajuste la largeur pour qu'elle soit égale à l'image */
+    max-width: 500px; /* Largeur maximale */
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-sizing: border-box;
+    flex-grow: 1; /* Permet à l'élément de prendre tout l'espace disponible */
+    margin: 0; /* Aucune marge */
+}
+
+/* Texte de bienvenue sans fond */
+.welcome-text {
+    color: #01AAC1;
+    font-size: 30px; /* Augmenter la taille pour plus de visibilité */
+    margin-bottom: 10px;
+}
+
+/* Texte d'information */
+.info-text {
+    font-size: 16px;
+    margin-bottom: 20px;
+    color: #555;
+}
+
+/* Champs de saisie avec icônes */
+.input-container {
+    position: relative;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+/* Icônes dans les champs */
+.input-icon {
+    position: absolute;
+    top: 50%;
+    left: 10px;
+    transform: translateY(-50%);
+    font-size: 18px;
+    color: #888;
+    cursor: pointer;
+}
+
+/* Champs de saisie */
+.input-field {
+    width: 100%;
+    padding: 12px 12px 12px 10px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    font-size: 16px;
+    border-radius: 8px; /* Coins arrondis modérés */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Ombre subtile autour du champ */
+}
+
+.input-field:focus {
+    border-color: #01AAC1;
+    outline: none;
+    box-shadow: 0 2px 5px rgba(0, 170, 193, 0.6); /* Ombre active sur focus */
+}
+
+/* Affichage des erreurs */
+.error-text {
+    color: red;
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+/* Bouton de connexion administrateur */
+.admin-btn {
+    width: 100%;
+    padding: 12px;
+    background-color: #01AAC1;
+    color: white;
+    border: none;
+    border-radius: 8px; /* Coins arrondis modérés */
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.admin-btn:hover {
+    background-color: #018a9e;
+}
+
+/* Diviseur */
+.divider {
+    margin: 30px 0;
+    position: relative;
+}
+
+.divider span {
+    position: absolute;
+    background-color: white;
+    padding: 0 10px;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #888;
+}
+
+/* Bouton de connexion */
+.login-btn {
+    width: 100%;
+    padding: 12px;
+    background-color: #01AAC1;
+    color: white;
+    border: none;
+    border-radius: 8px; /* Coins arrondis modérés */
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.login-btn:hover {
+    background-color: #018a9e;
+}
+
+/* Espacement autour du bouton de connexion */
+.admin-btn,
+.login-btn {
+    margin-top: 10px;
+}
+
+/* Conteneur de logo et image à droite */
+.logo-container {
+    width: 55%; /* Ajuste la largeur pour qu'elle soit égale à la carte de connexion */
+    position: relative;
+    background-image: url('../img/skydrive.png'); /* Chemin de l'image */
+    background-size: cover; /* L'image couvre tout l'arrière-plan */
+    background-position: center; /* L'image est centrée */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 95vh; /* L'image prend toute la hauteur de la page */
+    margin: 0; /* Aucune marge */
+   
+}
+
+
+/* Logo SkyDrive */
+.logo {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Pour les écrans mobiles */
+@media (max-width: 768px) {
+    .login-container {
+        flex-direction: column; /* Aligne tout verticalement sur mobile */
+        justify-content: center;
+    }
+
+    .login-box {
+        width: 90%;
+        max-width: 100%;
+    }
+
+    .logo-container {
+        display: none; /* Masque l'image sur petits écrans */
+    }
+}
