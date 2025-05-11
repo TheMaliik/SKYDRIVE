@@ -1,343 +1,506 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import ReactApexChart from 'react-apexcharts';
-import {
-  Container, Paper, Typography, CircularProgress, Alert, Box, Dialog, DialogTitle, DialogContent,
-  List, ListItem, ListItemText, IconButton,
-} from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
+import Chart from 'react-apexcharts';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
-// Professional color scheme
-const COLORS = ['#00C4B4', '#EF4444', '#F59E0B', '#8B5CF6', '#1B263B'];
-
-const VehicleStatsDashboard = () => {
-  const [priceData, setPriceData] = useState([]);
-  const [revenueData, setRevenueData] = useState([]);
-  const [rentalData, setRentalData] = useState([]);
-  const [insuranceData, setInsuranceData] = useState([]);
-  const [kilometrageData, setKilometrageData] = useState([]);
-  const [vehiclesData, setVehiclesData] = useState([]);
+const StatistiquesVehicules = () => {
+  const [statusChartData, setStatusChartData] = useState({ series: [], labels: [], total: 0 });
+  const [fuelChartData, setFuelChartData] = useState({ series: [], labels: [], total: 0 });
+  const [yearChartData, setYearChartData] = useState({ series: [], labels: [], total: 0 });
+  const [kilometrageChartData, setKilometrageChartData] = useState({ series: [], labels: [] });
+  const [overallStats, setOverallStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalTitle, setModalTitle] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [modalType, setModalType] = useState('');
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchStatistiquesVehicules = async () => {
       try {
         setLoading(true);
-        const [
-          priceRes, revenueRes, rentalRes, insuranceRes, kilometrageRes,
-        ] = await Promise.all([
-          axios.get('http://localhost:5000/api/stats/price-by-brand'),
-          axios.get('http://localhost:5000/api/stats/revenue'),
-          axios.get('http://localhost:5000/api/stats/rental-frequency'),
-          axios.get('http://localhost:5000/api/stats/insurance-alerts'),
-          axios.get('http://localhost:5000/api/stats/kilometrage-by-fuel'),
-        ]);
 
-        setPriceData(priceRes.data || []);
-        setRevenueData(revenueRes.data || []);
-        setRentalData(rentalRes.data || []);
-        setInsuranceData(insuranceRes.data || []);
-        setKilometrageData(kilometrageRes.data || []);
-        setError(null);
+        const statusResponse = await axios.get('http://localhost:5000/api/stats/vehicles/count-by-status');
+        if (!statusResponse.data || typeof statusResponse.data.data !== 'object' || statusResponse.data.data === null) {
+          throw new Error('Réponse de données de statut invalide');
+        }
+        const statusData = statusResponse.data.data;
+        setStatusChartData({
+          series: Object.values(statusData).filter(val => typeof val === 'number' && !isNaN(val)),
+          labels: Object.keys(statusData).filter(key => typeof key === 'string'),
+          total: typeof statusResponse.data.total === 'number' && !isNaN(statusResponse.data.total) ? statusResponse.data.total : 0,
+        });
+
+        const fuelResponse = await axios.get('http://localhost:5000/api/stats/vehicles/count-by-carburant');
+        if (!fuelResponse.data || typeof fuelResponse.data.data !== 'object' || fuelResponse.data.data === null) {
+          throw new Error('Réponse de données de carburant invalide');
+        }
+        const fuelData = fuelResponse.data.data;
+        setFuelChartData({
+          series: Object.values(fuelData).filter(val => typeof val === 'number' && !isNaN(val)),
+          labels: Object.keys(fuelData).filter(key => typeof key === 'string'),
+          total: typeof fuelResponse.data.total === 'number' && !isNaN(fuelResponse.data.total) ? fuelResponse.data.total : 0,
+        });
+
+        const yearResponse = await axios.get('http://localhost:5000/api/stats/vehicles/count-by-year');
+        if (!yearResponse.data || typeof yearResponse.data.data !== 'object' || yearResponse.data.data === null) {
+          throw new Error('Réponse de données d\'année invalide');
+        }
+        const yearData = yearResponse.data.data;
+        const filteredYearData = Object.entries(yearData)
+          .filter(([_, count]) => typeof count === 'number' && !isNaN(count) && count > 0)
+          .reduce((acc, [year, count]) => {
+            acc[year] = count;
+            return acc;
+          }, {});
+        setYearChartData({
+          series: Object.values(filteredYearData),
+          labels: Object.keys(filteredYearData),
+          total: typeof yearResponse.data.total === 'number' && !isNaN(yearResponse.data.total) ? yearResponse.data.total : 0,
+        });
+
+        const kilometrageResponse = await axios.get('http://localhost:5000/api/stats/kilometrage-by-fuel');
+        if (!kilometrageResponse.data || !Array.isArray(kilometrageResponse.data)) {
+          throw new Error('Réponse de données de kilométrage invalide');
+        }
+        setKilometrageChartData({
+          series: kilometrageResponse.data.map(item => item.avgKilometrage),
+          labels: kilometrageResponse.data.map(item => item._id),
+        });
+
+        const overallResponse = await axios.get('http://localhost:5000/api/stats/overall');
+        if (!overallResponse.data || typeof overallResponse.data !== 'object') {
+          throw new Error('Réponse de statistiques globales invalide');
+        }
+        setOverallStats(overallResponse.data);
+
+        setLoading(false);
       } catch (err) {
-        setError('Failed to fetch statistics. Please try again later.');
-        console.error(err);
-      } finally {
+        console.error('Erreur lors de la récupération des statistiques des véhicules:', err.message, err.response?.data);
+        setError(`Échec de la récupération des statistiques des véhicules: ${err.message}. Veuillez vérifier le serveur et réessayer.`);
         setLoading(false);
       }
     };
 
-    fetchData();
+    fetchStatistiquesVehicules();
   }, []);
 
-  const handleChartClick = async (type, category) => {
-    if (!category) return;
-
-    try {
-      setLoading(true);
-      let endpoint = '';
-      let title = '';
-
-      if (type === 'brand') {
-        endpoint = `http://localhost:5000/api/vehicles/brand/${category}`;
-        title = `Vehicles for Brand: ${category}`;
-      } else if (type === 'rental') {
-        endpoint = `http://localhost:5000/api/vehicles/rental-frequency/${category}`;
-        title = `Vehicles with Rental Frequency: ${category}`;
-      } else if (type === 'insurance') {
-        endpoint = `http://localhost:5000/api/vehicles/insurance/${category}`;
-        title = `Vehicles with Insurance Alert: ${category}`;
-      } else if (type === 'kilometrage') {
-        endpoint = `http://localhost:5000/api/vehicles/fuel/${category}`;
-        title = `Vehicles with Fuel Type: ${category}`;
+  const chartOptions = (title, labels, chartType = 'pie') => ({
+    chart: {
+      type: chartType,
+      height: 350,
+      animations: {
+        enabled: true,
+        easing: 'easeinout',
+        speed: 800,
+      },
+      background: '#ffffff',
+    },
+    colors: ['#1e88e5', '#26a69a', '#66bb6a', '#ef5350', '#ffca28', '#ab47bc'],
+    title: {
+      text: title,
+      align: 'left',
+      margin: 20,
+      style: {
+        fontSize: '18px',
+        fontWeight: '600',
+        fontFamily: '"Inter", sans-serif',
+        color: '#263238',
+      },
+    },
+    legend: {
+      position: 'bottom',
+      fontSize: '12px',
+      fontFamily: '"Inter", sans-serif',
+      labels: { colors: '#546e7a' },
+      markers: { width: 12, height: 12, radius: 12 },
+    },
+    dataLabels: {
+      enabled: true,
+      formatter: chartType === 'pie' ? (val) => `${val.toFixed(1)}%` : (val) => Math.round(val).toLocaleString(),
+      style: {
+        fontSize: '12px',
+        fontFamily: '"Inter", sans-serif',
+        colors: chartType === 'pie' ? ['#ffffff'] : ['#263238'],
+      },
+      dropShadow: { enabledace: chartType === 'pie', top: 1, left: 1, blur: 1, opacity: 0.5 },
+    },
+    responsive: [{
+      breakpoint: 576,
+      options: {
+        chart: { height: 280 },
+        legend: { fontSize: '10px' },
+        dataLabels: { style: { fontSize: '10px' } },
+      },
+    }],
+    noData: {
+      text: 'Aucune donnée disponible',
+      align: 'center',
+      verticalAlign: 'middle',
+      style: { fontSize: '14px', fontFamily: '"Inter", sans-serif', color: '#78909c' },
+    },
+    ...(chartType === 'pie' ? { labels: labels.length > 0 ? labels : ['Aucune Donnée'] } : {}),
+    ...(chartType === 'bar' ? {
+      xaxis: {
+        categories: labels.length > 0 ? labels : ['Aucune Donnée'],
+        labels: { rotate: -45, style: { fontSize: '12px', fontFamily: '"Inter", sans-serif', colors: '#546e7a' } },
+        axisTicks: { show: true, height: 6, color: '#eceff1' },
+        axisBorder: { show: true, color: '#eceff1' },
+      },
+      yaxis: {
+        title: { 
+          text: chartType === 'bar' && title.includes('Kilométrage') ? 'Kilométrage Moyen (km)' : 'Nombre de Véhicules', 
+          style: { fontSize: '12px', fontWeight: '600', fontFamily: '"Inter", sans-serif', color: '#263238' } 
+        },
+        labels: { 
+          style: { fontSize: '12px', fontFamily: '"Inter", sans-serif', colors: '#546e7a' },
+          formatter: (val) => Math.round(val).toLocaleString()
+        },
+      },
+      plotOptions: { bar: { horizontal: false, columnWidth: '50%', borderRadius: 6 } },
+      grid: { borderColor: '#eceff1', strokeDashArray: 4 },
+      tooltip: {
+        y: {
+          formatter: (val) => `${Math.round(val).toLocaleString()} km`
+        }
       }
-
-      if (endpoint) {
-        const response = await axios.get(endpoint);
-        setVehiclesData(response.data || []);
-        setModalTitle(title);
-        setSelectedCategory(category);
-        setModalType(type);
-        setModalOpen(true);
-      }
-    } catch (err) {
-      setError('Failed to fetch vehicle details.');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleModalClose = () => {
-    setModalOpen(false);
-    setModalTitle('');
-    setSelectedCategory(null);
-    setModalType('');
-    setVehiclesData([]);
-  };
-
-  // Chart Options
-  const priceOptions = {
-    chart: {
-      id: 'average-price-by-brand',
-      type: 'area',
-      animations: { enabled: true, easing: 'easeinout', speed: 800 },
-      width: '100%',
-      events: {
-        dataPointSelection: (event, chartContext, config) => {
-          const brand = priceData[config.dataPointIndex]?._id;
-          if (brand) handleChartClick('brand', brand);
-        },
-      },
-    },
-    colors: [COLORS[0]],
-    fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.7, opacityTo: 0.3 } },
-    dataLabels: {
-      enabled: true,
-      formatter: (val) => `$${val.toFixed(2)}`,
-    },
-    xaxis: { categories: priceData.map((d) => d._id), labels: { style: { fontSize: '12px' } } },
-    yaxis: { labels: { style: { fontSize: '12px' } } },
-    stroke: { curve: 'smooth', width: 3 },
-    responsive: [
-      { breakpoint: 600, options: { chart: { height: 280 }, dataLabels: { style: { fontSize: '10px' } } } },
-    ],
-  };
-
-  const revenueOptions = {
-    chart: {
-      id: 'revenue-over-time',
-      type: 'area',
-      animations: { enabled: true, easing: 'easeinout', speed: 800 },
-      width: '100%',
-    },
-    colors: [COLORS[1]],
-    fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.7, opacityTo: 0.3 } },
-    dataLabels: {
-      enabled: true,
-      formatter: (val) => `$${val.toFixed(2)}`,
-    },
-    xaxis: { 
-      categories: revenueData.map((d) => d.date || d._id || 'Unknown'), 
-      labels: { style: { fontSize: '12px' } } 
-    },
-    yaxis: { labels: { style: { fontSize: '12px' } } },
-    stroke: { curve: 'smooth', width: 3 },
-    responsive: [
-      { breakpoint: 600, options: { chart: { height: 280 }, dataLabels: { style: { fontSize: '10px' } } } },
-    ],
-  };
-
-  const rentalOptions = {
-    chart: {
-      id: 'rental-frequency',
-      type: 'bar',
-      animations: { enabled: true, easing: 'easeinout', speed: 800 },
-      width: '100%',
-      events: {
-        dataPointSelection: (event, chartContext, config) => {
-          const category = rentalData[config.dataPointIndex]?._id;
-          if (category) handleChartClick('rental', category);
-        },
-      },
-    },
-    colors: [COLORS[2]],
-    dataLabels: { enabled: true },
-    xaxis: { 
-      categories: rentalData.map((d) => d._id), 
-      labels: { style: { fontSize: '12px' } } 
-    },
-    yaxis: { labels: { style: { fontSize: '12px' } } },
-    responsive: [
-      { breakpoint: 600, options: { chart: { height: 280 }, dataLabels: { style: { fontSize: '10px' } } } },
-    ],
-  };
-
-  const insuranceOptions = {
-    chart: {
-      id: 'insurance-alerts',
-      type: 'donut',
-      animations: { enabled: true, easing: 'easeinout', speed: 800 },
-      width: '100%',
-      events: {
-        dataPointSelection: (event, chartContext, config) => {
-          const category = insuranceData[config.dataPointIndex]?._id;
-          if (category) handleChartClick('insurance', category);
-        },
-      },
-    },
-    colors: COLORS,
-    labels: insuranceData.map((d) => d._id),
-    dataLabels: {
-      enabled: true,
-      formatter: (val, opts) => `${opts.w.globals.labels[opts.seriesIndex]}: ${val.toFixed(1)}%`,
-      style: { fontSize: '14px', fontFamily: 'Roboto, sans-serif', fontWeight: 'bold' },
-    },
-    legend: { position: 'bottom', fontSize: '14px', fontFamily: 'Roboto, sans-serif' },
-    plotOptions: {
-      pie: {
-        donut: {
-          size: '65%',
-          labels: {
-            show: true,
-            total: {
-              show: true,
-              label: 'Total',
-              fontSize: '16px',
-              formatter: (w) => w.globals.seriesTotals.reduce((a, b) => a + b, 0) || 0,
-            },
-          },
-        },
-      },
-    },
-    responsive: [
-      { breakpoint: 600, options: { chart: { height: 280 }, legend: { fontSize: '12px' } } },
-    ],
-  };
-
-  const kilometrageOptions = {
-    chart: {
-      id: 'kilometrage-by-fuel',
-      type: 'bar',
-      animations: { enabled: true, easing: 'easeinout', speed: 800 },
-      width: '100%',
-      events: {
-        dataPointSelection: (event, chartContext, config) => {
-          const fuelType = kilometrageData[config.dataPointIndex]?._id;
-          if (fuelType) handleChartClick('kilometrage', fuelType);
-        },
-      },
-    },
-    colors: [COLORS[3]],
-    dataLabels: {
-      enabled: true,
-      formatter: (val) => `${Math.round(val)} km`,
-    },
-    xaxis: { 
-      categories: kilometrageData.map((d) => d._id), 
-      labels: { style: { fontSize: '12px' } } 
-    },
-    yaxis: { labels: { style: { fontSize: '12px' } } },
-    responsive: [
-      { breakpoint: 600, options: { chart: { height: 280 }, dataLabels: { style: { fontSize: '10px' } } } },
-    ],
-  };
-
-  const priceSeries = [{ name: 'Average Price', data: priceData.map((d) => d.avgPrice) }];
-
-  const rentalSeries = [{ name: 'Rental Frequency', data: rentalData.map((d) => d.count || 0) }];
-  const insuranceSeries = insuranceData.map((d) => d.count || 0);
-  const kilometrageSeries = [{ name: 'Average Kilometrage', data: kilometrageData.map((d) => d.avgKilometrage || 0) }];
+    } : {}),
+  });
 
   if (loading) {
     return (
-      <Container sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress size={60} />
-      </Container>
+      <div className="loading-container">
+        <div className="spinner"></div>
+        <p>Chargement des données...</p>
+        <style jsx>{`
+          .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f5f7fa;
+          }
+          .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #eceff1;
+            border-top: 4px solid #1e88e5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+          }
+          .loading-container p {
+            margin-top: 16px;
+            font-size: 16px;
+            color: #546e7a;
+            font-family: 'Inter', sans-serif;
+          }
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Container sx={{ padding: 2 }}>
-        <Alert severity="error">{error}</Alert>
-      </Container>
+      <div className="error-container">
+        <div className="error-alert">
+          <h4>Erreur</h4>
+          <p>{error}</p>
+          <button onClick={() => window.location.reload()}>Réessayer</button>
+        </div>
+        <style jsx>{`
+          .error-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #f5f7fa;
+            padding: 20px;
+          }
+          .error-alert {
+            background-color: #ffebee;
+            border: 1px solid #ffcdd2;
+            border-radius: 8px;
+            padding: 24px;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          }
+          .error-alert h4 {
+            color: #c62828;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            font-family: 'Inter', sans-serif;
+          }
+          .error-alert p {
+            color: #b71c1c;
+            font-size: 16px;
+            margin-bottom: 20px;
+            font-family: 'Inter', sans-serif;
+          }
+          .error-alert button {
+            background-color: #1e88e5;
+            color: #ffffff;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-family: 'Inter', sans-serif;
+          }
+          .error-alert button:hover {
+            background-color: #1565c0;
+          }
+        `}</style>
+      </div>
     );
   }
 
+  const isStatusValid = statusChartData.series.length > 0 && statusChartData.labels.length > 0;
+  const isFuelValid = fuelChartData.series.length > 0 && fuelChartData.labels.length > 0;
+  const isYearValid = yearChartData.series.length > 0 && yearChartData.labels.length > 0;
+  const isKilometrageValid = kilometrageChartData.series.length > 0 && kilometrageChartData.labels.length > 0;
+
   return (
-    <Container maxWidth={false} disableGutters sx={{ width: '100%', padding: 0 }}>
-      {/* Average Price per Day by Brand */}
-      <Paper sx={{ width: '100%', padding: 2, marginBottom: 2 }}>
-        <Typography variant="h6" gutterBottom>Average Price per Day by Brand</Typography>
-        {priceData.length > 0 ? (
-          <Box sx={{ width: '100%', overflow: 'hidden' }}>
-            <ReactApexChart
-              options={priceOptions}
-              series={priceSeries}
-              type="area"
-              height={400}
-              width="100%"
-            />
-          </Box>
-        ) : (
-          <Typography>No price data available</Typography>
-        )}
-      </Paper>
+    <div className="vehicle-stats-container">
+      <div className="row">
+        <div className="col-12">
+          <div className="chart-card overall-stats">
+            <div className="card-header">
+              <h2>Statistiques Globales</h2>
+            </div>
+            <div className="card-body">
+              {overallStats ? (
+                <div className="stats-grid">
+                  <div className="stat-item">
+                    <span className="stat-label">Total des Locations</span>
+                    <span className="stat-value">{overallStats.totalLocations}</span>
+                  </div>
+                  <div className="stat-item">
+                    <span className="stat-label">Locations Actives</span>
+                    <span className="stat-value">{overallStats.activeLocations}</span>
+                  </div>
+                  <div className="stat-item">
+                    <span className="stat-label">Locations Terminées</span>
+                    <span className="stat-value">{overallStats.completedLocations}</span>
+                  </div>
+                  <div className="stat-item">
+                    <span className="stat-label">Revenu Total</span>
+                    <span className="stat-value">DT {overallStats.totalRevenue.toFixed(2)}</span>
+                  </div>
+                  <div className="stat-item">
+                    <span className="stat-label">Durée Moyenne de Location</span>
+                    <span className="stat-value">{overallStats.averageRentalDurationDays.toFixed(1)} jours</span>
+                  </div>
+                  <div className="stat-item">
+                    <span className="stat-label">Distance Moyenne</span>
+                    <span className="stat-value">{overallStats.averageDistanceKm} km</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="no-data">Aucune statistique globale disponible</div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
 
-    
+      <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mt-4">
+        <div className="col">
+          <div className="chart-card">
+            <div className="card-header">
+              <h2>Répartition par Statut</h2>
+              <span>Total: {statusChartData.total}</span>
+            </div>
+            <div className="card-body">
+              {isStatusValid ? (
+                <Chart
+                  options={chartOptions('Répartition par Statut', statusChartData.labels, 'pie')}
+                  series={statusChartData.series}
+                  type="pie"
+                  height={350}
+                />
+              ) : (
+                <div className="no-data">Aucune donnée de statut disponible</div>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="col">
+          <div className="chart-card">
+            <div className="card-header">
+              <h2>Répartition par Type de Carburant</h2>
+              <span>Total: {fuelChartData.total}</span>
+            </div>
+            <div className="card-body">
+              {isFuelValid ? (
+                <Chart
+                  options={chartOptions('Répartition par Type de Carburant', fuelChartData.labels, 'pie')}
+                  series={fuelChartData.series}
+                  type="pie"
+                  height={350}
+                />
+              ) : (
+                <div className="no-data">Aucune donnée de type de carburant disponible</div>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="col">
+          <div className="chart-card">
+            <div className="card-header">
+              <h2>Répartition par Année</h2>
+              <span>Total: {yearChartData.total}</span>
+            </div>
+            <div className="card-body">
+              {isYearValid ? (
+                <Chart
+                  options={chartOptions('Répartition par Année', yearChartData.labels, 'bar')}
+                  series={[{ name: 'Véhicules', data: yearChartData.series }]}
+                  type="bar"
+                  height={350}
+                />
+              ) : (
+                <div className="no-data">Aucune donnée d\'année disponible</div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
 
-      
-      {/* Kilometrage by Fuel */}
-      <Paper sx={{ width: '100%', padding: 2, marginBottom: 2 }}>
-        <Typography variant="h6" gutterBottom>Kilometrage by Fuel Type</Typography>
-        {kilometrageData.length > 0 ? (
-          <Box sx={{ width: '100%', overflow: 'hidden' }}>
-            <ReactApexChart
-              options={kilometrageOptions}
-              series={kilometrageSeries}
-              type="bar"
-              height={400}
-              width="100%"
-            />
-          </Box>
-        ) : (
-          <Typography>No kilometrage data available</Typography>
-        )}
-      </Paper>
+      <div className="row mt-4">
+        <div className="col-12">
+          <div className="chart-card">
+            <div className="card-header">
+              <h2>Kilométrage Moyen par Carburant</h2>
+            </div>
+            <div className="card-body">
+              {isKilometrageValid ? (
+                <Chart
+                  options={chartOptions('Kilométrage Moyen par Carburant', kilometrageChartData.labels, 'bar')}
+                  series={[{ name: 'Kilométrage Moyen', data: kilometrageChartData.series }]}
+                  type="bar"
+                  height={350}
+                />
+              ) : (
+                <div className="no-data">Aucune donnée de kilométrage disponible</div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
 
-      {/* Modal for Details */}
-      <Dialog open={modalOpen} onClose={handleModalClose} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          {modalTitle}
-          <IconButton onClick={handleModalClose} sx={{ position: 'absolute', right: 8, top: 8 }}>
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent>
-          {vehiclesData.length > 0 ? (
-            <List>
-              {vehiclesData.map((vehicle) => (
-                <ListItem key={vehicle._id}>
-                  <ListItemText
-                    primary={`${vehicle.marque} ${vehicle.modele}`}
-                    secondary={`Immatriculation: ${vehicle.immatriculation}`}
-                  />
-                </ListItem>
-              ))}
-            </List>
-          ) : (
-            <Typography>No vehicles found.</Typography>
-          )}
-        </DialogContent>
-      </Dialog>
-    </Container>
+      <style jsx>{`
+        .vehicle-stats-container {
+          padding: 40px 20px;
+          background-color: #f5f7fa;
+          min-height: 100vh;
+          font-family: 'Inter', sans-serif;
+        }
+        .chart-card {
+          background: linear-gradient(145deg, #ffffff, #f8fafc);
+          border-radius: 12px;
+          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+          overflow: hidden;
+        }
+        .chart-card:hover {
+          transform: translateY(-6px);
+          box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+        }
+        .overall-stats {
+          background: linear-gradient(145deg, #e3f2fd, #bbdefb);
+        }
+        .card-header {
+          background: transparent;
+          padding: 16px 24px;
+          border-bottom: 1px solid #eceff1;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .card-header h2 {
+          font-size: 16px;
+          font-weight: 600;
+          color: #263238;
+          margin: 0;
+        }
+        .card-header span {
+          font-size: 14px;
+          font-weight: 500;
+          color: #78909c;
+        }
+        .card-body {
+          padding: 24px;
+        }
+        .no-data {
+          font-size: 14px;
+          color: #78909c;
+          text-align: center;
+          padding: 20px;
+        }
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+          gap: 24px;
+        }
+        .stat-item {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+          padding: 12px;
+          border-radius: 8px;
+          background: rgba(255, 255, 255, 0.5);
+          transition: background 0.3s;
+        }
+        .stat-item:hover {
+          background: rgba(255, 255, 255, 0.8);
+        }
+        .stat-label {
+          font-size: 13px;
+          font-weight: 500;
+          color: #546e7a;
+          margin-bottom: 8px;
+        }
+        .stat-value {
+          font-size: 20px;
+          font-weight: 700;
+          color: #263238;
+        }
+        @media (max-width: 768px) {
+          .vehicle-stats-container {
+            padding: 24px 12px;
+          }
+          .stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 16px;
+          }
+          .stat-label {
+            font-size: 12px;
+          }
+          .stat-value {
+            font-size: 18px;
+          }
+          .card-header h2 {
+            font-size: 14px;
+          }
+          .card-header span {
+            font-size: 12px;
+          }
+        }
+        @media (max-width: 576px) {
+          .stats-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
+    </div>
   );
 };
 
-export default VehicleStatsDashboard;
+export default StatistiquesVehicules;

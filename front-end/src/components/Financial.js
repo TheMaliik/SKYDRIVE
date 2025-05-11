@@ -195,7 +195,7 @@ const Financial = () => {
 
   return (
     <div className="finance-container">
-      <h1>Suivi Financier</h1>
+      
 
       
 

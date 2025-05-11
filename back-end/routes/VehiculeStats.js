@@ -4,17 +4,7 @@ const Vehicule = require('../model/Vehicule'); // Adjust path to your Vehicule m
 const Location = require('../model/Location');
 const Maintenance = require('../model/maintenance');
 
-// Get vehicle distribution by status
-router.get('/status', async (req, res) => {
-  try {
-    const stats = await Vehicule.aggregate([
-      { $group: { _id: '$statut', count: { $sum: 1 } } }
-    ]);
-    res.json(stats);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+
 
 // Get vehicle count by fuel type
 router.get('/fuel', async (req, res) => {
@@ -471,6 +461,152 @@ router.get('/vehicle-financials', async (req, res) => {
   }
 });
 
+
+
+router.get('/vehicles/count-by-status', async (req, res) => {
+    try {
+        const statusCounts = await Vehicule.aggregate([
+            {
+                $group: {
+                    _id: '$statut',
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $sort: { _id: 1 } // Sort by status alphabetically
+            }
+        ]);
+
+        // Transform the result into a more readable format
+        const result = {
+            Disponible: 0,
+            Loué: 0,
+            'En maintenance': 0,
+            'En panne': 0,
+            Accidenté: 0
+        };
+
+        statusCounts.forEach(item => {
+            result[item._id] = item.count;
+        });
+
+        res.status(200).json({
+            success: true,
+            data: result,
+            total: statusCounts.reduce((sum, item) => sum + item.count, 0)
+        });
+    } catch (error) {
+        console.error('Error counting vehicles by status:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors du comptage des véhicules par statut',
+            error: error.message
+        });
+    }
+});
+
+
+
+
+
+router.get('/vehicles/count-by-carburant', async (req, res) => {
+  try {
+    // Aggregate vehicles by carburant and count occurrences
+    const result = await Vehicule.aggregate([
+      {
+        $group: {
+          _id: '$carburant',
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          carburant: '$_id',
+          count: 1
+        }
+      }
+    ]);
+
+    // Transform the result into a key-value object for the response
+    const fuelCounts = {
+      Essence: 0,
+      Diesel: 0,
+      Hybride: 0,
+      Electrique: 0
+    };
+
+    result.forEach(item => {
+      fuelCounts[item.carburant] = item.count;
+    });
+
+    // Calculate total vehicles
+    const total = Object.values(fuelCounts).reduce((sum, count) => sum + count, 0);
+
+    // Send response
+    res.json({
+      success: true,
+      data: fuelCounts,
+      total
+    });
+  } catch (error) {
+    console.error('Error fetching vehicle counts by carburant:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching vehicle statistics'
+    });
+  }
+});
+
+// Route to count vehicles by year
+router.get('/vehicles/count-by-year', async (req, res) => {
+  try {
+    // Aggregate vehicles by annee and count occurrences
+    const result = await Vehicule.aggregate([
+      {
+        $group: {
+          _id: '$annee',
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          annee: '$_id',
+          count: 1
+        }
+      }
+    ]);
+
+    // Initialize counts for all possible years (2010 to current year)
+    const currentYear = new Date().getFullYear();
+    const yearCounts = {};
+    for (let year = 2010; year <= currentYear; year++) {
+      yearCounts[year] = 0;
+    }
+
+    // Populate counts from aggregation result
+    result.forEach(item => {
+      yearCounts[item.annee] = item.count;
+    });
+
+    // Calculate total vehicles
+    const total = Object.values(yearCounts).reduce((sum, count) => sum + count, 0);
+
+    // Send response
+    res.json({
+      success: true,
+      data: yearCounts,
+      total
+    });
+  } catch (error) {
+    console.error('Error fetching vehicle counts by year:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching vehicle statistics'
+    });
+  }
+});
 
 
 module.exports = router;
