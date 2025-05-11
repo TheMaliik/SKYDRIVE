@@ -23,9 +23,7 @@ const StatCards = ({ onNavigate }) => {
       chart: {
         type: 'bar',
         height: 350,
-        toolbar: {
-          show: true,
-        },
+        toolbar: { show: true },
       },
       plotOptions: {
         bar: {
@@ -44,34 +42,18 @@ const StatCards = ({ onNavigate }) => {
         categories: [],
         title: {
           text: 'Type de carburant',
-          style: {
-            fontSize: '14px',
-            fontWeight: 600,
-            fontFamily: 'Arial, sans-serif',
-          },
+          style: { fontSize: '14px', fontWeight: 600, fontFamily: 'Arial, sans-serif' },
         },
-        labels: {
-          style: {
-            fontSize: '12px',
-            fontFamily: 'Arial, sans-serif',
-          },
-        },
+        labels: { style: { fontSize: '12px', fontFamily: 'Arial, sans-serif' } },
       },
       yaxis: {
         title: {
           text: 'Revenu total (DT)',
-          style: {
-            fontSize: '14px',
-            fontWeight: 600,
-            fontFamily: 'Arial, sans-serif',
-          },
+          style: { fontSize: '14px', fontWeight: 600, fontFamily: 'Arial, sans-serif' },
         },
         labels: {
           formatter: (val) => `DT ${val.toFixed(2)}`,
-          style: {
-            fontSize: '12px',
-            fontFamily: 'Arial, sans-serif',
-          },
+          style: { fontSize: '12px', fontFamily: 'Arial, sans-serif' },
         },
       },
       fill: {
@@ -90,15 +72,10 @@ const StatCards = ({ onNavigate }) => {
       colors: ['#00f2fe'],
       grid: {
         borderColor: '#e7e7e7',
-        row: {
-          colors: ['#f3f3f3', 'transparent'],
-          opacity: 0.5,
-        },
+        row: { colors: ['#f3f3f3', 'transparent'], opacity: 0.5 },
       },
       tooltip: {
-        y: {
-          formatter: (val) => `DT ${val.toFixed(2)}`,
-        },
+        y: { formatter: (val) => `DT ${val.toFixed(2)}` },
         theme: 'light',
       },
       title: {
@@ -120,52 +97,27 @@ const StatCards = ({ onNavigate }) => {
       chart: {
         type: 'area',
         height: 350,
-        toolbar: {
-          show: true,
-        },
-        zoom: {
-          enabled: true,
-        },
+        toolbar: { show: true },
+        zoom: { enabled: true },
       },
-      dataLabels: {
-        enabled: false,
-      },
-      stroke: {
-        curve: 'smooth',
-        width: 2,
-      },
+      dataLabels: { enabled: false },
+      stroke: { curve: 'smooth', width: 2 },
       xaxis: {
         categories: [],
         title: {
           text: 'Mois',
-          style: {
-            fontSize: '14px',
-            fontWeight: 600,
-            fontFamily: 'Arial, sans-serif',
-          },
+          style: { fontSize: '14px', fontWeight: 600, fontFamily: 'Arial, sans-serif' },
         },
-        labels: {
-          style: {
-            fontSize: '12px',
-            fontFamily: 'Arial, sans-serif',
-          },
-        },
+        labels: { style: { fontSize: '12px', fontFamily: 'Arial, sans-serif' } },
       },
       yaxis: {
         title: {
           text: 'Nombre de locations',
-          style: {
-            fontSize: '14px',
-            fontWeight: 600,
-            fontFamily: 'Arial, sans-serif',
-          },
+          style: { fontSize: '14px', fontWeight: 600, fontFamily: 'Arial, sans-serif' },
         },
         labels: {
           formatter: (val) => Math.round(val),
-          style: {
-            fontSize: '12px',
-            fontFamily: 'Arial, sans-serif',
-          },
+          style: { fontSize: '12px', fontFamily: 'Arial, sans-serif' },
         },
       },
       fill: {
@@ -178,9 +130,7 @@ const StatCards = ({ onNavigate }) => {
         },
       },
       colors: ['#00e396'],
-      grid: {
-        borderColor: '#e7e7e7',
-      },
+      grid: { borderColor: '#e7e7e7' },
       tooltip: {
         x: {
           formatter: (val, { dataPointIndex }) => {
@@ -196,9 +146,7 @@ const StatCards = ({ onNavigate }) => {
             return val;
           },
         },
-        y: {
-          formatter: (val) => `${val} locations`,
-        },
+        y: { formatter: (val) => `${val} locations` },
         theme: 'light',
       },
       title: {
@@ -224,7 +172,7 @@ const StatCards = ({ onNavigate }) => {
     const storedRole = localStorage.getItem('role');
     setRole(storedRole);
 
-    // Fetch vehicles count
+    // Fetch vehicles count (always needed for Total des véhicules)
     const fetchVehicules = async () => {
       try {
         const { data } = await axios.get(API_VEHICULES);
@@ -234,118 +182,120 @@ const StatCards = ({ onNavigate }) => {
       }
     };
 
-    // Fetch revenu par type de carburant
-    const fetchPriceByBrand = async () => {
-      try {
-        const { data } = await axios.get('http://localhost:5000/api/stats/revenu-par-carburant');
-        // Accéder au tableau dans data.data
-        const revenuData = data.data;
+    // Fetch chart data only for admin users
+    if (storedRole === 'admin') {
+      const fetchPriceByBrand = async () => {
+        try {
+          const { data } = await axios.get('http://localhost:5000/api/stats/revenu-par-carburant');
+          const revenuData = data.data;
 
-        if (!Array.isArray(revenuData) || revenuData.length === 0) {
-          setError('Aucune donnée disponible pour le graphique.');
-          return;
-        }
-
-        const carburants = revenuData.map(item => item.carburant || 'Inconnu');
-        const revenus = revenuData.map(item => item.revenuTotal || 0);
-
-        setChartData(prev => ({
-          ...prev,
-          series: [{ name: 'Revenu', data: revenus }],
-          options: {
-            ...prev.options,
-            xaxis: {
-              ...prev.options.xaxis,
-              categories: carburants,
-            },
-          },
-        }));
-      } catch (err) {
-        console.error('Erreur de chargement des stats de revenu par carburant :', err);
-        setError('Échec du chargement des données du graphique.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    // Fetch locations per month data
-    const fetchLocationsPerMonth = async () => {
-      try {
-        const { data } = await axios.get('http://localhost:5000/api/stats/locations-per-month');
-        console.log('Données API locations-per-month :', data);
-
-        if (!Array.isArray(data) || data.length === 0) {
-          setLocationsError('Aucune donnée disponible pour le graphique des locations.');
-          return;
-        }
-
-        const categories = data.map(item => {
-          if (!item.year || !item.month) {
-            console.warn('Donnée invalide détectée :', item);
-            return 'Inconnu';
+          if (!Array.isArray(revenuData) || revenuData.length === 0) {
+            setError('Aucune donnée disponible pour le graphique.');
+            return;
           }
-          return `${item.month}/${item.year}`;
-        });
-        const counts = data.map(item => {
-          if (!item.year || !item.month || !item.count) {
-            console.warn('Donnée incomplète :', item);
-            return { x: 'Inconnu', y: 0, meta: { year: 'N/A', month: 'N/A' } };
-          }
-          return {
-            x: `${item.month}/${item.year}`,
-            y: item.count,
-            meta: { year: item.year, month: item.month },
-          };
-        });
 
-        console.log('Données formatées pour le graphique :', counts);
+          const carburants = revenuData.map(item => item.carburant || 'Inconnu');
+          const revenus = revenuData.map(item => item.revenuTotal || 0);
 
-        setLocationsChartData(prev => ({
-          ...prev,
-          series: [{ name: 'Locations', data: counts }],
-          options: {
-            ...prev.options,
-            xaxis: {
-              ...prev.options.xaxis,
-              categories,
+          setChartData(prev => ({
+            ...prev,
+            series: [{ name: 'Revenu', data: revenus }],
+            options: {
+              ...prev.options,
+              xaxis: { ...prev.options.xaxis, categories: carburants },
             },
-          },
-        }));
-      } catch (err) {
-        console.error('Erreur de chargement des stats de locations par mois :', err);
-        setLocationsError('Échec du chargement des données du graphique des locations.');
-      } finally {
-        setLocationsLoading(false);
-      }
-    };
+          }));
+        } catch (err) {
+          console.error('Erreur de chargement des stats de revenu par carburant :', err);
+          setError('Échec du chargement des données du graphique.');
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      const fetchLocationsPerMonth = async () => {
+        try {
+          const { data } = await axios.get('http://localhost:5000/api/stats/locations-per-month');
+          if (!Array.isArray(data) || data.length === 0) {
+            setLocationsError('Aucune donnée disponible pour le graphique des locations.');
+            return;
+          }
+
+          const categories = data.map(item => {
+            if (!item.year || !item.month) {
+              console.warn('Donnée invalide détectée :', item);
+              return 'Inconnu';
+            }
+            return `${item.month}/${item.year}`;
+          });
+          const counts = data.map(item => {
+            if (!item.year || !item.month || !item.count) {
+              console.warn('Donnée incomplète :', item);
+              return { x: 'Inconnu', y: 0, meta: { year: 'N/A', month: 'N/A' } };
+            }
+            return {
+              x: `${item.month}/${item.year}`,
+              y: item.count,
+              meta: { year: item.year, month: item.month },
+            };
+          });
+
+          setLocationsChartData(prev => ({
+            ...prev,
+            series: [{ name: 'Locations', data: counts }],
+            options: {
+              ...prev.options,
+              xaxis: { ...prev.options.xaxis, categories },
+            },
+          }));
+        } catch (err) {
+          console.error('Erreur de chargement des stats de locations par mois :', err);
+          setLocationsError('Échec du chargement des données du graphique des locations.');
+        } finally {
+          setLocationsLoading(false);
+        }
+      };
+
+      fetchPriceByBrand();
+      fetchLocationsPerMonth();
+    } else {
+      // Skip chart loading for non-admin users
+      setIsLoading(false);
+      setLocationsLoading(false);
+    }
 
     fetchVehicules();
-    fetchPriceByBrand();
-    fetchLocationsPerMonth();
   }, []);
 
+  // Define cards that are always visible
   const data = [
     { title: 'Total des véhicules', value: totalVehicules, icon: '🚗' },
     { title: 'Entretiens à prévoir', value: 10, icon: '🔧' },
-    {
-      title: 'Employés actifs',
-      value: 8,
-      icon: '👥',
-      onClick: () => onNavigate('GestionEmployes'),
-    },
     {
       title: 'Contrats',
       value: 15,
       icon: '📄',
       onClick: () => onNavigate('Contracts'),
     },
-    {
-      title: 'Suivi Financier',
-      value: 20,
-      icon: '📅',
-      onClick: () => onNavigate('Financial'),
-    },
-  ].filter(item => item.title !== 'Suivi Financier' || role === 'admin');
+  ];
+
+  // Add admin-only cards
+  if (role === 'admin') {
+    data.push(
+      {
+        title: 'Employés actifs',
+        value: 8,
+        icon: '👥',
+        onClick: () => onNavigate('GestionEmployes'),
+      },
+      {
+        title: 'Suivi Financier',
+        value: 20,
+        icon: '📅',
+        onClick: () => onNavigate('Financial'),
+      }
+    );
+  }
 
   return (
     <>
@@ -361,41 +311,43 @@ const StatCards = ({ onNavigate }) => {
         ))}
       </div>
 
-      <div className="charts-container">
-        <div className="chart-container">
-          {isLoading ? (
-            <p className="chart-message">Chargement du graphique...</p>
-          ) : error ? (
-            <p className="chart-message chart-error">{error}</p>
-          ) : chartData.series[0].data.length === 0 ? (
-            <p className="chart-message">Aucune donnée à afficher dans le graphique.</p>
-          ) : (
-            <Chart
-              options={chartData.options}
-              series={chartData.series}
-              type="bar"
-              height={500}
-            />
-          )}
-        </div>
+      {role === 'admin' && (
+        <div className="charts-container">
+          <div className="chart-container">
+            {isLoading ? (
+              <p className="chart-message">Chargement du graphique...</p>
+            ) : error ? (
+              <p className="chart-message chart-error">{error}</p>
+            ) : chartData.series[0].data.length === 0 ? (
+              <p className="chart-message">Aucune donnée à afficher dans le graphique.</p>
+            ) : (
+              <Chart
+                options={chartData.options}
+                series={chartData.series}
+                type="bar"
+                height={500}
+              />
+            )}
+          </div>
 
-        <div className="chart-container">
-          {locationsLoading ? (
-            <p className="chart-message">Chargement du graphique...</p>
-          ) : locationsError ? (
-            <p className="chart-message chart-error">{locationsError}</p>
-          ) : locationsChartData.series[0].data.length === 0 ? (
-            <p className="chart-message">Aucune donnée à afficher dans le graphique.</p>
-          ) : (
-            <Chart
-              options={locationsChartData.options}
-              series={locationsChartData.series}
-              type="area"
-              height={500}
-            />
-          )}
+          <div className="chart-container">
+            {locationsLoading ? (
+              <p className="chart-message">Chargement du graphique...</p>
+            ) : locationsError ? (
+              <p className="chart-message chart-error">{locationsError}</p>
+            ) : locationsChartData.series[0].data.length === 0 ? (
+              <p className="chart-message">Aucune donnée à afficher dans le graphique.</p>
+            ) : (
+              <Chart
+                options={locationsChartData.options}
+                series={locationsChartData.series}
+                type="area"
+                height={500}
+              />
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 };
