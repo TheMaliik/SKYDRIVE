@@ -46,6 +46,9 @@ exports.register = asyncHandler(async (req, res) => {
 });
 ;
 
+
+
+
 // Connexion de l'utilisateur
 exports.login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;

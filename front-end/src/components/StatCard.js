@@ -15,9 +15,10 @@ const StatCard = ({ title, value, icon, onClick }) => (
 );
 
 const StatCards = ({ onNavigate }) => {
+  const [role, setRole] = useState(null);
   const [totalVehicules, setTotalVehicules] = useState(0);
   const [chartData, setChartData] = useState({
-    series: [{ name: 'Price', data: [] }],
+    series: [{ name: 'Revenu', data: [] }],
     options: {
       chart: {
         type: 'bar',
@@ -34,7 +35,6 @@ const StatCards = ({ onNavigate }) => {
           borderRadius: 5,
         },
       },
-      
       stroke: {
         show: true,
         width: 2,
@@ -43,7 +43,7 @@ const StatCards = ({ onNavigate }) => {
       xaxis: {
         categories: [],
         title: {
-          text: 'Marque',
+          text: 'Type de carburant',
           style: {
             fontSize: '14px',
             fontWeight: 600,
@@ -59,7 +59,7 @@ const StatCards = ({ onNavigate }) => {
       },
       yaxis: {
         title: {
-          text: 'Prix moyen (DT)',
+          text: 'Revenu total (DT)',
           style: {
             fontSize: '14px',
             fontWeight: 600,
@@ -67,7 +67,7 @@ const StatCards = ({ onNavigate }) => {
           },
         },
         labels: {
-          formatter: (val) => `DT ${val}`,
+          formatter: (val) => `DT ${val.toFixed(2)}`,
           style: {
             fontSize: '12px',
             fontFamily: 'Arial, sans-serif',
@@ -97,12 +97,12 @@ const StatCards = ({ onNavigate }) => {
       },
       tooltip: {
         y: {
-          formatter: (val) => `DT ${val}`,
+          formatter: (val) => `DT ${val.toFixed(2)}`,
         },
         theme: 'light',
       },
       title: {
-        text: 'Prix moyen par marque',
+        text: 'Revenu par type de carburant',
         align: 'left',
         style: {
           fontSize: '16px',
@@ -193,7 +193,7 @@ const StatCards = ({ onNavigate }) => {
               const { year, month } = dataPoint.meta;
               return `${monthNames[month - 1]} ${year}`;
             }
-            return val; // Fallback si meta est absent
+            return val;
           },
         },
         y: {
@@ -220,6 +220,10 @@ const StatCards = ({ onNavigate }) => {
   const [locationsError, setLocationsError] = useState(null);
 
   useEffect(() => {
+    // Fetch role from localStorage
+    const storedRole = localStorage.getItem('role');
+    setRole(storedRole);
+
     // Fetch vehicles count
     const fetchVehicules = async () => {
       try {
@@ -230,31 +234,34 @@ const StatCards = ({ onNavigate }) => {
       }
     };
 
-    // Fetch price by brand data
+    // Fetch revenu par type de carburant
     const fetchPriceByBrand = async () => {
       try {
-        const { data } = await axios.get('http://localhost:5000/api/stats/price-by-brand');
-        if (!Array.isArray(data) || data.length === 0) {
+        const { data } = await axios.get('http://localhost:5000/api/stats/revenu-par-carburant');
+        // Accéder au tableau dans data.data
+        const revenuData = data.data;
+
+        if (!Array.isArray(revenuData) || revenuData.length === 0) {
           setError('Aucune donnée disponible pour le graphique.');
           return;
         }
 
-        const brands = data.map(item => item._id || 'Inconnu');
-        const prices = data.map(item => item.avgPrice || 0);
+        const carburants = revenuData.map(item => item.carburant || 'Inconnu');
+        const revenus = revenuData.map(item => item.revenuTotal || 0);
 
         setChartData(prev => ({
           ...prev,
-          series: [{ name: 'Price', data: prices }],
+          series: [{ name: 'Revenu', data: revenus }],
           options: {
             ...prev.options,
             xaxis: {
               ...prev.options.xaxis,
-              categories: brands,
+              categories: carburants,
             },
           },
         }));
       } catch (err) {
-        console.error('Erreur de chargement des stats de prix par marque :', err);
+        console.error('Erreur de chargement des stats de revenu par carburant :', err);
         setError('Échec du chargement des données du graphique.');
       } finally {
         setIsLoading(false);
@@ -265,14 +272,13 @@ const StatCards = ({ onNavigate }) => {
     const fetchLocationsPerMonth = async () => {
       try {
         const { data } = await axios.get('http://localhost:5000/api/stats/locations-per-month');
-        console.log('Données API locations-per-month :', data); // Débogage
+        console.log('Données API locations-per-month :', data);
 
         if (!Array.isArray(data) || data.length === 0) {
           setLocationsError('Aucune donnée disponible pour le graphique des locations.');
           return;
         }
 
-        // Valider et formater les données
         const categories = data.map(item => {
           if (!item.year || !item.month) {
             console.warn('Donnée invalide détectée :', item);
@@ -292,7 +298,7 @@ const StatCards = ({ onNavigate }) => {
           };
         });
 
-        console.log('Données formatées pour le graphique :', counts); // Débogage
+        console.log('Données formatées pour le graphique :', counts);
 
         setLocationsChartData(prev => ({
           ...prev,
@@ -339,7 +345,7 @@ const StatCards = ({ onNavigate }) => {
       icon: '📅',
       onClick: () => onNavigate('Financial'),
     },
-  ];
+  ].filter(item => item.title !== 'Suivi Financier' || role === 'admin');
 
   return (
     <>

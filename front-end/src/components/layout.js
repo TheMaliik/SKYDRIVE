@@ -146,7 +146,7 @@ const Layout = () => {
         default:
           return <Dashboard onNavigate={changePage} />;
       }
-    } else if (role === "employee") {
+    } else if (role === "user") {
       switch (currentPage) {
         case "Dashboard":
           return <Dashboard />;

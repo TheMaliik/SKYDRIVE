@@ -1,18 +1,28 @@
 import React from 'react';
 import '../styles/Sidebar.css';
 
-const Sidebar = ({ onPageChange, currentPage, unreadCount, role }) => {
+const Sidebar = ({ onPageChange, currentPage, unreadCount }) => {
+  // Retrieve role from localStorage
+  const role = localStorage.getItem('role');
+
   const navItems = [
-    { name: "Dashboard", label: "📊 Tableau de bord" },
-    { name: "GestionVehicules", label: "🚗 Véhicules" },
-    { name: "GestionLocation", label: "📄 Location" },
-    { name: "GestionClient", label: "👥 Clients" },
-    { name: "Calendar", label: "📅 Calendrier" },
-    { name: "GestionMaintenance", label: "🔧 Maintenance" },
-    { name: "Notifications", label: `🔔 Notifications ${unreadCount > 0 ? <span className="notification-badge">{unreadCount}</span> : ''}` },
-     { name: "Statistiques", label: "📈 Statistiques" },
-    ...(role === "admin" ? [{ name: "Statistiques", label: "📈 Statistiques" }] : []),
-  ];
+    { name: 'Dashboard', label: '📊 Tableau de bord' },
+    { name: 'GestionVehicules', label: '🚗 Véhicules' },
+    { name: 'GestionLocation', label: '📄 Location' },
+    { name: 'GestionClient', label: '👥 Clients' },
+    { name: 'Calendar', label: '📅 Calendrier' },
+    { name: 'GestionMaintenance', label: '🔧 Maintenance' },
+    { 
+      name: 'Notifications', 
+      label: (
+        <>
+          🔔 Notifications{' '}
+          {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
+        </>
+      )
+    },
+    { name: 'Statistiques', label: '📈 Statistiques' },
+  ].filter(item => item.name !== 'Statistiques' || role === 'admin');
 
   return (
     <div className="sidebar">

@@ -563,11 +563,11 @@ const handleEdit = (vehicule) => {
                                <td>
     <button onClick={() => handleEdit(vehicule)}>Modifier</button>
     <button 
-        onClick={() => handleDelete(vehicule._id)} 
-        disabled={vehicule.statut === "Loué"}
-    >
-        Supprimer
-    </button>
+    onClick={() => handleDelete(vehicule._id)} 
+    disabled={vehicule.statut === "Loué" || vehicule.statut === "En maintenance"}
+>
+    Supprimer
+</button>
 </td>
                             </tr>
                         ))}

@@ -609,4 +609,66 @@ router.get('/vehicles/count-by-year', async (req, res) => {
 });
 
 
+
+
+
+
+// Route GET pour calculer le revenu par type de carburant
+router.get('/revenu-par-carburant', async (req, res) => {
+  try {
+    // Agrégation MongoDB
+    const revenus = await Location.aggregate([
+      // Étape 1 : Joindre la collection Vehicule via vehiculeId
+      {
+        $lookup: {
+          from: 'vehicules', // Nom de la collection dans MongoDB (en minuscule et pluriel)
+          localField: 'vehiculeId',
+          foreignField: '_id',
+          as: 'vehicule'
+        }
+      },
+      // Étape 2 : Décomposer le tableau vehicule (résultat de $lookup)
+      {
+        $unwind: '$vehicule'
+      },
+      // Étape 3 : Grouper par type de carburant et sommer prixTTC
+      {
+        $group: {
+          _id: '$vehicule.carburant',
+          revenuTotal: { $sum: '$prixTTC' }
+        }
+      },
+      // Étape 4 : Formater le résultat
+      {
+        $project: {
+          carburant: '$_id',
+          revenuTotal: 1,
+          _id: 0
+        }
+      },
+      // Étape 5 : Trier par carburant (facultatif, pour une présentation cohérente)
+      {
+        $sort: { carburant: 1 }
+      }
+    ]);
+
+    // Réponse avec les résultats
+    res.status(200).json({
+      message: 'Revenu par type de carburant calculé avec succès',
+      data: revenus
+    });
+  } catch (error) {
+    console.error('Erreur lors du calcul du revenu par carburant :', error);
+    res.status(500).json({
+      message: 'Erreur serveur lors du calcul du revenu',
+      error: error.message
+    });
+  }
+});
+
+
+
+
+
+
 module.exports = router;
