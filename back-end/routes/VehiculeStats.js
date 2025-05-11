@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Vehicule = require('../model/Vehicule'); // Adjust path to your Vehicule model
 const Location = require('../model/Location');
+const Maintenance = require('../model/maintenance');
 
 // Get vehicle distribution by status
 router.get('/status', async (req, res) => {
@@ -316,6 +317,157 @@ router.get('/monthly-revenue', async (req, res) => {
     })));
   } catch (error) {
     res.status(500).json({ message: 'Error fetching monthly stats', error: error.message });
+  }
+});
+
+
+
+router.get('/locations-per-month', async (req, res) => {
+  try {
+    const locationsPerMonth = await Location.aggregate([
+      {
+        $group: {
+          _id: {
+            year: { $year: '$startDate' },
+            month: { $month: '$startDate' }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: {
+          '_id.year': 1,
+          '_id.month': 1
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          year: '$_id.year',
+          month: '$_id.month',
+          count: 1
+        }
+      }
+    ]);
+
+    res.json(locationsPerMonth);
+  } catch (error) {
+    console.error('Erreur lors du comptage des locations par mois:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+
+
+
+
+// Route pour calculer le coût total de maintenance par mois
+router.get('/maintenance/cout-par-mois', async (req, res) => {
+    try {
+        const coutParMois = await Maintenance.aggregate([
+            {
+                // Grouper par année et mois
+                $group: {
+                    _id: {
+                        annee: { $year: "$date" },
+                        mois: { $month: "$date" }
+                    },
+                    totalCout: { $sum: "$cout" },
+                    nombreEntretiens: { $count: {} }
+                }
+            },
+            {
+                // Trier par année et mois
+                $sort: {
+                    "_id.annee": -1,
+                    "_id.mois": -1
+                }
+            },
+            {
+                // Formater la sortie
+                $project: {
+                    _id: 0,
+                    periode: {
+                        $concat: [
+                            { $toString: "$_id.annee" },
+                            "-",
+                            { $cond: [
+                                { $lt: ["$_id.mois", 10] },
+                                { $concat: ["0", { $toString: "$_id.mois" }] },
+                                { $toString: "$_id.mois" }
+                            ]}
+                        ]
+                    },
+                    totalCout: 1,
+                    nombreEntretiens: 1
+                }
+            }
+        ]);
+
+        res.json({
+            success: true,
+            data: coutParMois
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Erreur lors du calcul des coûts",
+            error: error.message
+        });
+    }
+});
+
+
+
+
+
+// Route to get financial summary per vehicle
+router.get('/vehicle-financials', async (req, res) => {
+  try {
+    // Aggregate location revenue
+    const locationRevenue = await Location.aggregate([
+      {
+        $group: {
+          _id: '$vehiculeId',
+          totalRevenue: { $sum: '$prixTTC' }
+        }
+      }
+    ]);
+
+    // Aggregate maintenance costs
+    const maintenanceCosts = await Maintenance.aggregate([
+      {
+        $group: {
+          _id: '$vehicule',
+          totalMaintenanceCost: { $sum: '$cout' }
+        }
+      }
+    ]);
+
+    // Combine results and fetch vehicle names using findById
+    const financialSummary = await Promise.all(
+      locationRevenue.map(async (vehicle) => {
+        const maintenance = maintenanceCosts.find(
+          (m) => m._id.toString() === vehicle._id.toString()
+        );
+
+        // Fetch vehicle details using findById
+        const vehicleDoc = await Vehicule.findById(vehicle._id).select('marque modele');
+
+        return {
+          vehicleId: vehicle._id,
+          vehicleName: vehicleDoc ? `${vehicleDoc.marque} ${vehicleDoc.modele}` : 'Unknown',
+          totalRevenue: vehicle.totalRevenue || 0,
+          totalMaintenanceCost: maintenance ? maintenance.totalMaintenanceCost : 0,
+          netProfit: (vehicle.totalRevenue || 0) - (maintenance ? maintenance.totalMaintenanceCost : 0)
+        };
+      })
+    );
+
+    res.json(financialSummary);
+  } catch (error) {
+    console.error('Error calculating vehicle financials:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

@@ -9,7 +9,7 @@ const errorHandler = require("./middleware/ErrorHandler");
 const vehiculeStatsRoutes = require('./routes/VehiculeStats'); 
 const contractRoutes = require('./routes/Contrat');
 const financeRoutess = require('./routes/FinanceRoutes');
-
+const clientStatsRoutes = require('./routes/ClientStatsRoutes');
 
 const app = express();
 require("dotenv").config();
@@ -122,6 +122,7 @@ if (financeRoutes) app.use("/api/finance", financeRoutes);
 app.use('/api/stats', vehiculeStatsRoutes); 
 app.use('/api/contracts', contractRoutes);
 app.use('/api/finance', financeRoutess);
+app.use('/api/statsClient',clientStatsRoutes);
 
 // Gestion des erreurs
 app.use(errorHandler);

@@ -1,4 +1,6 @@
 /* ✅ StatCard CSS */
+
+/* Styles existants pour stat-card */
 .stat-card {
   background-color: white;
   padding: 15px;
@@ -63,4 +65,74 @@ body.dark-mode .stat-card .details p {
   gap: 20px; /* Espacement entre les cartes */
   justify-content: space-around; /* Centrer les cartes horizontalement */
   padding: 20px;
+}
+
+/* Style pour le conteneur du graphique */
+
+
+/* Dark Mode Styles pour chart-container */
+body.dark-mode .chart-container {
+  background-color: #2d2d2d; /* Fond sombre pour le mode sombre */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Ombre adaptée */
+}
+
+/* Style pour le titre du graphique */
+.chart-title {
+  text-align: center;
+  font-size: 20px;
+  font-weight: 600;
+  color: #263238;
+  margin: 20px 0 10px;
+}
+
+/* Dark Mode pour le titre */
+body.dark-mode .chart-title {
+  color: #f0f0f0;
+}
+
+/* Style pour les messages de chargement ou d'erreur */
+.chart-message {
+  text-align: center;
+  font-size: 16px;
+  color: #555;
+}
+
+.chart-error {
+  color: #e74c3c; /* Rouge pour les erreurs */
+}
+
+/* Dark Mode pour les messages */
+body.dark-mode .chart-message {
+  color: #bbb;
+}
+
+body.dark-mode .chart-error {
+  color: #ff6b6b; /* Rouge clair pour le mode sombre */
+}
+
+
+
+/* Style pour le conteneur des graphiques (disposition côte à côte) */
+.charts-container {
+  display: flex;
+  flex-wrap: nowrap; /* Prevent wrapping to keep charts side by side */
+  gap: 20px; /* Space between the charts */
+  justify-content: space-between; /* Distribute space evenly */
+  padding: 20px;
+}
+
+/* Style pour chaque conteneur de graphique */
+.chart-container {
+  background-color: white;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  flex: 1; /* Each chart takes equal space */
+  min-width: 0; /* Prevent overflow issues */
+}
+
+/* Dark Mode Styles pour charts-container et chart-container */
+body.dark-mode .chart-container {
+  background-color: #2d2d2d;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }

@@ -31,7 +31,7 @@ const LocationPage = () => {
     prixParJour: 0,
     prixHT: 0,
     prixTTC: 0,
-    kilometrageDebut: '',
+    kilometrageInitial: '', // Changed to match backend
     typeGarantie: '',
     montantGarantie: ''
   });
@@ -46,6 +46,13 @@ const LocationPage = () => {
         axios.get(API_LOCATIONS),
         axios.get(API_EVENTS)
       ]);
+
+      console.log('API Responses:', {
+        vehicules: vehiculesRes.data,
+        clients: clientsRes.data,
+        locations: locationsRes.data,
+        events: eventsRes.data
+      });
 
       setVehicules(vehiculesRes.data);
       setClients(clientsRes.data);
@@ -87,7 +94,7 @@ const LocationPage = () => {
 
     const processedValue = ['prixTotal', 'prixParJour', 'prixHT', 'prixTTC', 'montantGarantie'].includes(name)
       ? parseFloat(value) || 0
-      : ['kilometrageDebut'].includes(name)
+      : ['kilometrageInitial'].includes(name) // Changed to match backend
         ? parseInt(value) || 0
         : value;
 
@@ -95,6 +102,7 @@ const LocationPage = () => {
       ...prev,
       [name]: processedValue
     }));
+    console.log(`Form field changed: ${name} = ${processedValue}`);
   };
 
   // Mise à jour du kilométrage initial quand véhicule change
@@ -104,9 +112,14 @@ const LocationPage = () => {
       if (selectedVehicule) {
         setFormData(prev => ({
           ...prev,
-          kilometrageDebut: selectedVehicule.kilometrage || 0,
+          kilometrageInitial: selectedVehicule.kilometrage || 0, // Changed to match backend
           prixParJour: selectedVehicule.prixParJour || 0
         }));
+        console.log('Selected vehicle:', {
+          vehiculeId: formData.vehiculeId,
+          kilometrageInitial: selectedVehicule.kilometrage,
+          prixParJour: selectedVehicule.prixParJour
+        });
         toast.success('Véhicule sélectionné, kilométrage et prix mis à jour !');
       }
     }
@@ -150,6 +163,7 @@ const LocationPage = () => {
             prixHT: roundedPrixHT,
             prixTTC: roundedPrixTTC
           }));
+          console.log('Price calculated:', { prixHT: roundedPrixHT, prixTTC: roundedPrixTTC });
           toast.success('Prix calculé avec succès !');
         }
       } catch (error) {
@@ -177,6 +191,7 @@ const LocationPage = () => {
             telephone: '',
             ville: ''
           }));
+          console.log('No client found for CIN:', formData.clientCIN);
           toast.warn('Aucun client trouvé pour ce CIN');
           return;
         }
@@ -188,6 +203,13 @@ const LocationPage = () => {
           telephone: client.telephone ?? '',
           ville: client.ville ?? ''
         }));
+        console.log('Client info updated:', {
+          CIN: formData.clientCIN,
+          nom: client.nom,
+          prenom: client.prenom,
+          telephone: client.telephone,
+          ville: client.ville
+        });
         toast.success(`Informations du client ${client.prenom} ${client.nom} chargées !`);
       } catch (error) {
         console.error("Erreur dans la mise à jour des infos client:", error);
@@ -202,8 +224,9 @@ const LocationPage = () => {
   const handleTerminate = async (location) => {
     try {
       const locationId = location._id;
-      const kilometrageInitial = location.kilometrageInitial || location.vehiculeId?.kilometrage;
-      if (!kilometrageInitial) {
+      const kilometrageInitial = location.kilometrageInitial || location.vehiculeId?.kilometrage || 0;
+      if (!kilometrageInitial && kilometrageInitial !== 0) {
+        console.error('Kilométrage initial non disponible:', location);
         toast.error("Kilométrage initial non disponible.");
         return;
       }
@@ -214,7 +237,7 @@ const LocationPage = () => {
 
       while (!isValid) {
         const kilometrageFinalInput = prompt(
-          `Kilométrage actuel: ${kilometrageInitial}\nEntrez le kilométrage final (doit être > ${kilometrageInitial}):`
+          `Kilométrage initial: ${kilometrageInitial}\nEntrez le kilométrage final (doit être > ${kilometrageInitial}):`
         );
 
         if (kilometrageFinalInput === null) return;
@@ -235,11 +258,18 @@ const LocationPage = () => {
         isValid = true;
       }
 
+      console.log('Terminating location:', {
+        locationId,
+        kilometrageInitial,
+        kilometrageFinal,
+        distanceParcourue
+      });
+
       await axios.put(`${API_LOCATIONS}/${locationId}/terminer`, { kilometrageFinal });
       await fetchAllData();
       toast.success(`Location terminée avec succès ! Distance parcourue : ${distanceParcourue} km`);
     } catch (error) {
-      console.error("Erreur:", error);
+      console.error("Erreur lors de la terminaison:", error);
       const errorMessage = error.response?.data?.message || "Erreur lors de la terminaison de la location";
       toast.error(errorMessage);
     }
@@ -256,41 +286,116 @@ const LocationPage = () => {
       return;
     }
 
-    const client = location.client || {};
-    const vehicule = location.vehiculeId || {};
+    console.log('Location data:', JSON.stringify(location, null, 2));
+
+    // Validate required fields
+    if (typeof location.kilometrageInitial === 'undefined') {
+      console.error('Missing required field: kilometrageInitial');
+      toast.error('Données incomplètes : kilométrage initial manquant.');
+      return;
+    }
+    if (!location.typeGarantie) {
+      console.warn('Type de garantie manquant, using default: "cin"');
+      location.typeGarantie = 'cin'; // Fallback to avoid breaking
+    }
+
+    const client = location.client || location.clientId || {};
+    const vehicule = location.vehicule || location.vehiculeId || {};
 
     try {
       setLoading(true);
       console.log('Generating PDF for location:', locationId);
 
       // Create new jsPDF instance
-      const doc = new jsPDF();
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      // Set font and styles
+      doc.setFont('helvetica', 'normal');
       doc.setFontSize(12);
 
-      // Add content to PDF
-      doc.text('Contrat de Location de Véhicule', 20, 20);
+      // Header
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Contrat de Location de Véhicule', 105, 20, { align: 'center' });
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
       doc.text(`Numéro de location: ${locationId}`, 20, 30);
-      doc.text(`Date: ${new Date().toLocaleDateString('fr-FR')}`, 20, 40);
-      
-      doc.text('Informations du Client:', 20, 60);
-      doc.text(`Nom: ${client.prenom || ''} ${client.nom || ''}`, 30, 70);
-      doc.text(`CIN: ${client.CIN || ''}`, 30, 80);
-      doc.text(`Téléphone: ${client.telephone || ''}`, 30, 90);
-      doc.text(`Ville: ${client.ville || ''}`, 30, 100);
+      doc.text(`Date: ${new Date().toLocaleDateString('fr-FR')}`, 160, 30, { align: 'right' });
 
-      doc.text('Informations du Véhicule:', 20, 120);
-      doc.text(`Marque: ${vehicule.marque || ''}`, 30, 130);
-      doc.text(`Modèle: ${vehicule.modele || ''}`, 30, 140);
-      doc.text(`Kilométrage initial: ${location.kilometrageDebut || 0} km`, 30, 150);
+      // Line under header
+      doc.setLineWidth(0.5);
+      doc.line(20, 35, 190, 35);
 
-      doc.text('Détails de la Location:', 20, 170);
-      doc.text(`Date de début: ${new Date(location.startDate).toLocaleDateString('fr-FR')}`, 30, 180);
-      doc.text(`Date de fin: ${new Date(location.endDate).toLocaleDateString('fr-FR')}`, 30, 190);
-      doc.text(`Prix TTC: ${location.prixTTC || 0} TND`, 30, 200);
-      doc.text(`Type de garantie: ${location.typeGarantie || ''}`, 30, 210);
+      // Client Information
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Informations du Client', 20, 45);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Nom: ${client.prenom || ''} ${client.nom || ''}`, 25, 55);
+      doc.text(`CIN: ${client.CIN || ''}`, 25, 65);
+      doc.text(`Téléphone: ${client.telephone || ''}`, 25, 75);
+      doc.text(`Ville: ${client.ville || ''}`, 25, 85);
+
+      // Vehicle Information
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Informations du Véhicule', 20, 100);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Marque: ${vehicule.marque || ''}`, 25, 110);
+      doc.text(`Modèle: ${vehicule.modele || ''}`, 25, 120);
+      doc.text(`Kilométrage initial: ${location.kilometrageInitial} km`, 25, 130);
+
+      // Rental Details
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Détails de la Location', 20, 145);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Date de début: ${new Date(location.startDate).toLocaleDateString('fr-FR')}`, 25, 155);
+      doc.text(`Date de fin: ${new Date(location.endDate).toLocaleDateString('fr-FR')}`, 25, 165);
+      doc.text(`Prix TTC: ${location.prixTTC || 0} TND`, 25, 175);
+      doc.text(`Type de garantie: ${location.typeGarantie}`, 25, 185);
       if (location.typeGarantie === 'montant') {
-        doc.text(`Montant de la garantie: ${location.montantGarantie || 0} TND`, 30, 220);
+        doc.text(`Montant de la garantie: ${location.montantGarantie || 0} TND`, 25, 195);
       }
+
+      // General Terms
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Conditions Générales', 20, 210);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      const terms = [
+        '1. Le locataire s’engage à restituer le véhicule dans l’état où il l’a reçu, sauf usure normale.',
+        '2. Toute prolongation de la location doit être approuvée par le loueur.',
+        '3. Le locataire est responsable de toutes amendes ou infractions commises pendant la période de location.',
+        '4. En cas de dommages au véhicule, le locataire doit en informer le loueur immédiatement.'
+      ];
+      terms.forEach((term, index) => {
+        doc.text(term, 25, 220 + index * 10);
+      });
+
+      // Signatures
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Signatures', 20, 270);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Loueur:', 20, 280);
+      doc.line(40, 280, 90, 280);
+      doc.text('Locataire:', 110, 280);
+      doc.line(130, 280, 180, 280);
+
+      // Footer
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'italic');
+      doc.text('Page 1/1', 105, 290, { align: 'center' });
 
       // Convert PDF to Blob
       const pdfBlob = doc.output('blob');
@@ -359,6 +464,18 @@ const LocationPage = () => {
       return;
     }
 
+    if (!formData.kilometrageInitial) {
+      console.error('Kilométrage initial manquant:', formData);
+      toast.error("Le kilométrage initial est requis.");
+      return;
+    }
+
+    if (!formData.typeGarantie) {
+      console.error('Type de garantie manquant:', formData);
+      toast.error("Le type de garantie est requis.");
+      return;
+    }
+
     setLoading(true);
     try {
       let overrideBlacklist = false;
@@ -367,6 +484,7 @@ const LocationPage = () => {
       try {
         const response = await axios.get(`${API_CLIENTS}?cin=${formData.clientCIN}`);
         existingClient = response.data.length > 0 ? response.data[0] : null;
+        console.log('Client check response:', { CIN: formData.clientCIN, client: existingClient });
       } catch (error) {
         console.error("Erreur lors de la recherche du client:", error);
         toast.error('Erreur lors de la recherche du client');
@@ -392,16 +510,19 @@ const LocationPage = () => {
           telephone: formData.telephone,
           ville: formData.ville
         },
-        kilometrageDebut: formData.kilometrageDebut || 0,
-        prixTotal: formData.prixTotal,
+        kilometrageInitial: formData.kilometrageInitial, // Changed to match backend
+        prixTotal: formData.prixTTC,
         prixParJour: formData.prixParJour,
+        prixHT: formData.prixHT,
+        prixTTC: formData.prixTTC,
         typeGarantie: formData.typeGarantie,
-        montantGarantie: formData.montantGarantie,
+        montantGarantie: formData.typeGarantie === 'montant' ? formData.montantGarantie : 0,
         overrideBlacklist
       };
 
-      console.log("Données envoyées au serveur:", locationData);
+      console.log("Données envoyées au serveur:", JSON.stringify(locationData, null, 2));
       const response = await axios.post(API_LOCATIONS, locationData);
+      console.log('Location creation response:', response.data);
 
       toast.success(`Location ajoutée avec succès pour ${formData.clientPrenom} ${formData.clientNom} !`);
       await fetchAllData();
@@ -418,12 +539,14 @@ const LocationPage = () => {
         endDate: '',
         prixTotal: 0,
         prixParJour: 0,
-        kilometrageDebut: '',
+        prixHT: 0,
+        prixTTC: 0,
+        kilometrageInitial: '',
         typeGarantie: '',
         montantGarantie: ''
       });
     } catch (error) {
-      console.error("Erreur lors de l'ajout de la location", error);
+      console.error("Erreur lors de l'ajout de la location:", error);
       let errorMessage = "Erreur lors de l'ajout de la location";
       if (error.response) {
         errorMessage = error.response.data.message || errorMessage;
@@ -563,11 +686,11 @@ const LocationPage = () => {
             </div>
 
             <div className="form-group">
-              <label>Kilométrage début</label>
+              <label>Kilométrage initial</label>
               <input
                 type="number"
-                name="kilometrageDebut"
-                value={formData.kilometrageDebut}
+                name="kilometrageInitial"
+                value={formData.kilometrageInitial}
                 onChange={handleChange}
                 min="0"
                 required
@@ -652,8 +775,8 @@ const LocationPage = () => {
               {locations
                 .filter(loc => loc.statut === 'active')
                 .map(location => {
-                  const client = location.client || {};
-                  const vehicule = location.vehiculeId || {};
+                  const client = location.client || location.clientId || {};
+                  const vehicule = location.vehicule || location.vehiculeId || {};
 
                   const formatDate = (date) => {
                     try {
