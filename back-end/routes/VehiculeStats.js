@@ -1,0 +1,324 @@
+const express = require('express');
+const router = express.Router();
+const Vehicule = require('../model/Vehicule'); // Adjust path to your Vehicule model
+const Location = require('../model/Location');
+
+// Get vehicle distribution by status
+router.get('/status', async (req, res) => {
+  try {
+    const stats = await Vehicule.aggregate([
+      { $group: { _id: '$statut', count: { $sum: 1 } } }
+    ]);
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get vehicle count by fuel type
+router.get('/fuel', async (req, res) => {
+  try {
+    const stats = await Vehicule.aggregate([
+      { $group: { _id: '$carburant', count: { $sum: 1 } } }
+    ]);
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get average price per day by brand
+router.get('/price-by-brand', async (req, res) => {
+  try {
+    const stats = await Vehicule.aggregate([
+      { $group: { _id: '$marque', avgPrice: { $avg: '$prixParJour' } } }
+    ]);
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get vehicle age distribution
+router.get('/age', async (req, res) => {
+  try {
+    const stats = await Vehicule.aggregate([
+      { $group: { _id: '$annee', count: { $sum: 1 } } },
+      { $sort: { _id: 1 } }
+    ]);
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get total revenue from rentals
+router.get('/revenue', async (req, res) => {
+  try {
+    const stats = await Vehicule.aggregate([
+      { $unwind: '$locationHistory' },
+      { $group: { _id: null, totalRevenue: { $sum: '$locationHistory.prixTotal' } } }
+    ]);
+    res.json(stats[0]?.totalRevenue || 0);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get rental frequency by vehicle
+router.get('/rental-frequency', async (req, res) => {
+  try {
+    const stats = await Vehicule.aggregate([
+      {
+        $project: {
+          immatriculation: 1,
+          marque: 1,
+          modele: 1,
+          rentalCount: { $size: '$locationHistory' }
+        }
+      },
+      { $sort: { rentalCount: -1 } }
+    ]);
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get vehicles with expiring insurance (within 30 days)
+router.get('/insurance-alerts', async (req, res) => {
+  try {
+    const stats = await Vehicule.find({
+      assurance: {
+        $lte: new Date(new Date().setDate(new Date().getDate() + 30))
+      }
+    }).select('immatriculation marque modele assurance');
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get average kilometrage by fuel type
+router.get('/kilometrage-by-fuel', async (req, res) => {
+  try {
+    const stats = await Vehicule.aggregate([
+      { $group: { _id: '$carburant', avgKilometrage: { $avg: '$kilometrage' } } }
+    ]);
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+
+
+// From Location Table Stats 
+
+router.get('/overall', async (req, res) => {
+  try {
+    const stats = await Location.aggregate([
+      {
+        $facet: {
+          totalLocations: [{ $count: 'count' }],
+          activeLocations: [
+            { $match: { statut: 'active' } },
+            { $count: 'count' }
+          ],
+          completedLocations: [
+            { $match: { statut: 'terminée' } },
+            { $count: 'count' }
+          ],
+          totalRevenue: [
+            { $group: { _id: null, total: { $sum: '$prixTTC' } } }
+          ],
+          averageRentalDuration: [
+            {
+              $group: {
+                _id: null,
+                avgDuration: {
+                  $avg: {
+                    $divide: [
+                      { $subtract: ['$endDate', '$startDate'] },
+                      1000 * 60 * 60 * 24 // Convert to days
+                    ]
+                  }
+                }
+              }
+            }
+          ],
+          averageDistance: [
+            { $match: { distanceParcourue: { $exists: true, $ne: null } } },
+            { $group: { _id: null, avgDistance: { $avg: '$distanceParcourue' } } }
+          ]
+        }
+      }
+    ]);
+
+    const response = {
+      totalLocations: stats[0].totalLocations[0]?.count || 0,
+      activeLocations: stats[0].activeLocations[0]?.count || 0,
+      completedLocations: stats[0].completedLocations[0]?.count || 0,
+      totalRevenue: stats[0].totalRevenue[0]?.total || 0,
+      averageRentalDurationDays: stats[0].averageRentalDuration[0]?.avgDuration || 0,
+      averageDistanceKm: stats[0].averageDistance[0]?.avgDistance || 0
+    };
+
+    res.json(response);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching overall stats', error: error.message });
+  }
+});
+
+// Get stats by vehicle
+router.get('/by-vehicle/:vehiculeId', async (req, res) => {
+  try {
+    const vehiculeId = req.params.vehiculeId;
+    
+    const stats = await Location.aggregate([
+      { $match: { vehiculeId: new mongoose.Types.ObjectId(vehiculeId) } },
+      {
+        $facet: {
+          totalLocations: [{ $count: 'count' }],
+          totalRevenue: [
+            { $group: { _id: null, total: { $sum: '$prixTTC' } } }
+          ],
+          totalDistance: [
+            { $match: { distanceParcourue: { $exists: true, $ne: null } } },
+            { $group: { _id: null, total: { $sum: '$distanceParcourue' } } }
+          ]
+        }
+      }
+    ]);
+
+    const response = {
+      totalLocations: stats[0].totalLocations[0]?.count || 0,
+      totalRevenue: stats[0].totalRevenue[0]?.total || 0,
+      totalDistanceKm: stats[0].totalDistance[0]?.total || 0
+    };
+
+    res.json(response);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching vehicle stats', error: error.message });
+  }
+});
+
+
+
+
+router.get('/all-vehicles', async (req, res) => {
+  try {
+    const stats = await Location.aggregate([
+      {
+        $facet: {
+          totalLocations: [{ $count: 'count' }],
+          activeLocations: [
+            { $match: { statut: 'active' } },
+            { $count: 'count' }
+          ],
+          completedLocations: [
+            { $match: { statut: 'terminée' } },
+            { $count: 'count' }
+          ],
+          totalRevenue: [
+            { $group: { _id: null, total: { $sum: '$prixTTC' } } }
+          ],
+          totalDistance: [
+            { $match: { distanceParcourue: { $exists: true, $ne: null } } },
+            { $group: { _id: null, total: { $sum: '$distanceParcourue' } } }
+          ],
+          averageRentalDuration: [
+            {
+              $group: {
+                _id: null,
+                avgDuration: {
+                  $avg: {
+                    $divide: [
+                      { $subtract: ['$endDate', '$startDate'] },
+                      1000 * 60 * 60 * 24 // Convert to days
+                    ]
+                  }
+                }
+              }
+            }
+          ],
+          vehicleStats: [
+            {
+              $group: {
+                _id: '$vehiculeId',
+                totalLocations: { $sum: 1 },
+                totalRevenue: { $sum: '$prixTTC' },
+                totalDistance: { $sum: '$distanceParcourue' }
+              }
+            },
+            {
+              $lookup: {
+                from: 'vehicules', // Adjust collection name as needed
+                localField: '_id',
+                foreignField: '_id',
+                as: 'vehicleInfo'
+              }
+            },
+            { $unwind: { path: '$vehicleInfo', preserveNullAndEmptyArrays: true } }
+          ]
+        }
+      }
+    ]);
+
+    const response = {
+      totalLocations: stats[0].totalLocations[0]?.count || 0,
+      activeLocations: stats[0].activeLocations[0]?.count || 0,
+      completedLocations: stats[0].completedLocations[0]?.count || 0,
+      totalRevenue: stats[0].totalRevenue[0]?.total || 0,
+      totalDistanceKm: stats[0].totalDistance[0]?.total || 0,
+      averageRentalDurationDays: stats[0].averageRentalDuration[0]?.avgDuration || 0,
+      vehicleBreakdown: stats[0].vehicleStats.map(v => ({
+        vehicleId: v._id,
+        vehicleInfo: v.vehicleInfo || null,
+        totalLocations: v.totalLocations,
+        totalRevenue: v.totalRevenue,
+        totalDistanceKm: v.totalDistance || 0
+      }))
+    };
+
+    res.json(response);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching vehicle stats', error: error.message });
+  }
+});
+
+// Get monthly revenue stats for all vehicles
+router.get('/monthly-revenue', async (req, res) => {
+  try {
+    const stats = await Location.aggregate([
+      {
+        $group: {
+          _id: {
+            year: { $year: '$startDate' },
+            month: { $month: '$startDate' }
+          },
+          totalRevenue: { $sum: '$prixTTC' },
+          locationCount: { $sum: 1 },
+          totalDistance: { $sum: '$distanceParcourue' }
+        }
+      },
+      { $sort: { '_id.year': -1, '_id.month': -1 } },
+      { $limit: 12 } // Last 12 months
+    ]);
+
+    res.json(stats.map(stat => ({
+      year: stat._id.year,
+      month: stat._id.month,
+      totalRevenue: stat.totalRevenue,
+      locationCount: stat.locationCount,
+      totalDistanceKm: stat.totalDistance || 0
+    })));
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching monthly stats', error: error.message });
+  }
+});
+
+
+
+module.exports = router;

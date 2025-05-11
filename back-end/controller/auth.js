@@ -1,166 +1,226 @@
-const asyncHandler = require("../middleware/async");
-const User = require("../model/User");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const User = require('../model/User');
+const asyncHandler = require("express-async-handler");
+const crypto = require("crypto");
+const nodemailer = require("nodemailer");
 const ErrorResponse = require("../utils/ErrorResponse");
 
-exports.register = asyncHandler(async (req, res, next) => { 
-  const { name, email, password, role } = req.body;
-  const user = await User.create({ name, email, password, role });
-  const token = user.getSignedJwtToken();
-  res.status(200).json({ success: true, token });
+const emailUser = process.env.EMAIL_USER;
+const emailPass = process.env.EMAIL_PASS;
+const clientUrl = process.env.CLIENT_URL || "http://localhost:3000";
+
+// Enregistrement de l'utilisateurs
+exports.register = asyncHandler(async (req, res) => {
+  const { cin, nom, prenom, email, phone, address, ville, password, role } = req.body;
+
+  // Vérifier que tous les champs requis sont fournis
+  if (!cin || !nom || !prenom || !email || !password || !role) {
+    return res.status(400).json({ success: false, message: "Les champs obligatoires sont manquants." });
+  }
+
+  // Vérifier si un utilisateur avec le même email ou cin existe déjà
+  const existingUser = await User.findOne({ $or: [{ email }, { cin }] });
+  if (existingUser) {
+    return res.status(400).json({ success: false, message: "L'utilisateur avec cet email ou CIN existe déjà." });
+  }
+
+  // Création de l'utilisateur (le mot de passe sera haché automatiquement)
+  const user = await User.create({
+    cin,
+    nom,
+    prenom,
+    email,
+    phone,
+    address,
+    ville,
+    password,
+    role,
+  });
+
+  // Supprimer le mot de passe de la réponse
+  const userResponse = user.toObject();
+  delete userResponse.password;
+
+  res.status(201).json({ success: true, data: userResponse });
+});
+;
+
+// Connexion de l'utilisateur
+exports.login = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+
+  // Validation des champs requis
+  if (!email || !password) {
+    return res.status(400).json({ 
+      success: false,
+      message: 'Email et mot de passe requis'
+    });
+  }
+
+  // Récupération de l'utilisateur avec le mot de passe
+  const user = await User.findOne({ email }).select('+password');
+  if (!user) {
+    return res.status(401).json({
+      success: false,
+      message: 'Identifiants invalides'
+    });
+  }
+
+  // Comparaison des mots de passe
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) {
+    return res.status(401).json({
+      success: false,
+      message: 'Identifiants invalides'
+    });
+  }
+
+  // Génération du token JWT
+  const token = jwt.sign(
+    { id: user._id, role: user.role },
+    process.env.JWT_SECRET || 'votre_secret_key',
+    { expiresIn: '8h' }
+  );
+
+  // Réponse avec token
+  res.status(200).json({
+    success: true,
+    token,
+    role: user.role,
+    id: user._id,
+    message: 'Connexion réussie'
+  });
 });
 
-exports.login = asyncHandler(async (req, res, next) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return next(new ErrorResponse("Please provide an email and password", 400));
-  }
+// Déconnexion de l'utilisateur
+exports.logout = asyncHandler(async (req, res) => {
+  res.status(200).json({ success: true, message: "Déconnexion réussie" });
+});
 
-  const user = await User.findOne({ email }).select("+password");
+// Mot de passe oublié (envoi du lien de réinitialisation)
+exports.forgotPassword = asyncHandler(async (req, res, next) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+
   if (!user) {
-    return next(new ErrorResponse("User not found", 401));
+    return next(new ErrorResponse("Utilisateur non trouvé", 404));
   }
 
-  const isMatch = await user.testPassword(password);
+  // Génération du token de réinitialisation
+  const resetToken = crypto.randomBytes(20).toString("hex");
+  const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
 
-  if (!isMatch) {
-    return next(new ErrorResponse("Invalid password", 401));
-  }
+  user.resetPasswordToken = hashedToken;
+  user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // Token valide pendant 10 minutes
+  await user.save({ validateBeforeSave: false });
 
-  const token = user.getSignedJwtToken();
+  // Configuration de l'email
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: emailUser,
+      pass: emailPass,
+    },
+  });
 
-  const options = {
-    expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-    httpOnly: true,
+  const resetUrl = `${clientUrl}/reset-password/${resetToken}`;
+  const mailOptions = {
+    from: `"SkyDrive Support" <${emailUser}>`,
+    to: user.email,
+    subject: "Réinitialisation de mot de passe",
+    html: `<p>Bonjour ${user.nom || ""},</p>
+           <p>Cliquez sur ce lien pour réinitialiser votre mot de passe :</p>
+           <a href="${resetUrl}">${resetUrl}</a>
+           <p>Ce lien expire dans 10 minutes.</p>`,
   };
 
-  res
-    .status(200)
-    .cookie("token", token, options)
-    .json({ success: true, token, message: "Login successful" });
+  // Envoi de l'email
+  await transporter.sendMail(mailOptions);
+
+  res.status(200).json({ success: true, message: "Email envoyé avec succès" });
 });
 
-//get all the information about the profile
-exports.getMe = asyncHandler(async (req, res, next) => {
-  const user = await User.findById(req.user.id);
-  res.status(200).json({ success: true, data: user });
-});
-
-//forgot password
-exports.forgotPassword = asyncHandler(async (req, res, next) => {
-  const user = await User.findOne({ email: req.body.email });
-
-  if (!user) {
-    return next(new ErrorResponse("There is no user with that email", 404));
-  }
-
-  const resetToken = await user.getResetPasswordToken();
-
-  await user.save();
-
-  const resetUrl = `${req.protocol}://${req.get(
-    "host"
-  )}/api/v1/resetpassword/${resetToken}`;
-
-  try {
-    await sendEmail({
-      email: user.email,
-      subject: "Password reset token",
-      message: resetUrl,
-    });
-
-    res.status(200).json({ success: true, data: "email sent" });
-  } catch (err) {
-    console.log(err);
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpire = undefined;
-
-    await user.save();
-    return next(new ErrorResponse("could not send the email", 500));
-  }
-});
-//reset password
+// Réinitialisation du mot de passe
 exports.resetPassword = asyncHandler(async (req, res, next) => {
-  //get hashed token
-  const resetPasswordToken = crypto
-    .createHash("sha256")
-    .update(req.params.resetToken)
-    .digest("hex");
+  const { token } = req.params;
+  const { newPassword } = req.body;
+
+  // Hacher le token pour le vérifier
+  const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+  // Chercher l'utilisateur avec ce token valide
   const user = await User.findOne({
-    resetPasswordToken,
-    resetPasswordExpire: { $gt: Date.now() },
+    resetPasswordToken: hashedToken,
+    resetPasswordExpire: { $gt: Date.now() }
   });
+
   if (!user) {
-    return next(new ErrorResponse("Invalid or expired token", 400));
+    return next(new ErrorResponse('Token invalide ou expiré', 400));
   }
-  user.password = req.body.password;
+
+  // Réinitialiser le mot de passe
+  user.password = newPassword; // Le hook 'pre-save' s'occupera du hachage
   user.resetPasswordToken = undefined;
   user.resetPasswordExpire = undefined;
+
   await user.save();
 
-  const options = {
-    expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-    httpOnly: true,
-  };
-  const token = user.getSignedJwtToken();
-  res
-    .status(200)
-    .cookie("token", token, options)
-    .json({ success: true, token });
-});
-//update user information
-exports.updateDetails = asyncHandler(async (req, res, next) => {
-  let fieldToUpdate = {};
-  if (req.body.email) {
-    fieldToUpdate.email = req.body.email;
-  }
-  if (req.body.name) {
-    fieldToUpdate.name = req.body.name;
-  }
-  //check to see if there is any update in fields
-  if (Object.keys(fieldToUpdate).length === 0) {
-    return next(new ErrorResponse("there is no fields to update", 401));
-  }
-  const user = await User.findByIdAndUpdate(req.user.id, fieldToUpdate, {
-    new: true,
-    runValidators: true,
+  res.status(200).json({
+    success: true,
+    message: 'Mot de passe réinitialisé avec succès'
   });
-  if (!user) {
-    return next(new ErrorResponse("No user found", 404));
-  }
-  res.status(200).json({ success: true, data: user });
 });
 
-//update user password
-exports.updatePassword = asyncHandler(async (req, res, next) => {
-  const user = await User.findById(req.user.id).select("+password");
-  if (!user) {
-    return next(new ErrorResponse("No user found", 404));
-  }
-  const password = req.body.password;
-  const newPassword = req.body.newPassword;
-  if (!password || !newPassword) {
-    return next(new ErrorResponse("please provide a password", 401));
-  }
-  //Check the current password
-  const isMatch = await user.testPassword(password);
-  if (!isMatch) {
-    return next(new ErrorResponse("the password is incorrect"));
-  }
-  user.password = newPassword;
-  await user.save();
-  res.status(200).json({ success: true, data: "password is updated" });
-});
-
-exports.logout = asyncHandler((req, res, next) => {
-  //clear cookie
-  res.cookie("token", "", {
-    expires: new Date(Date.now() + 10),
-    httpOnly: true,
-  });
-  res.status(200).json({ success: true, data: {} });
-});
-
-exports.getAllUsers = asyncHandler(async (req, res, next) => {
-  const users = await User.find();
+// Récupérer tous les utilisateurs (admin uniquement)
+exports.getAllUsers = asyncHandler(async (req, res) => {
+  const users = await User.find({ role: { $ne: "admin" } });
   res.status(200).json({ success: true, data: users });
+});
+
+// Vérification du token de réinitialisation
+exports.verifyResetToken = asyncHandler(async (req, res) => {
+  const { token } = req.params;
+
+  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+  const user = await User.findOne({
+    resetPasswordToken: hashedToken,
+    resetPasswordExpire: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    return res.status(400).json({ success: false, message: "Token invalide ou expiré" });
+  }
+
+  res.status(200).json({ success: true, message: "Token valide" });
+});
+// Changer le mot de passe de l'utilisateur
+exports.changePassword = asyncHandler(async (req, res, next) => {
+  const { id } = req.params; // Récupère l'ID de l'utilisateur à partir des paramètres
+  const { oldPassword, newPassword } = req.body; // Récupère l'ancien et le nouveau mot de passe
+
+  // Vérification de l'utilisateur par son ID
+  const user = await User.findById(id);
+  if (!user) {
+    return res.status(404).json({ success: false, message: "Utilisateur non trouvé" });
+  }
+
+  // Comparaison de l'ancien mot de passe avec celui en base
+  const isMatch = await bcrypt.compare(oldPassword, user.password);
+  if (!isMatch) {
+    return res.status(400).json({ success: false, message: "Ancien mot de passe incorrect" });
+  }
+
+  // Hachage du nouveau mot de passe
+  user.password = await bcrypt.hash(newPassword, 10); // Hachage avec un sel de 10 tours
+
+  // Enregistrement du mot de passe modifié
+  await user.save();
+
+  // Réponse de succès
+  res.status(200).json({
+    success: true,
+    message: "Mot de passe modifié avec succès"
+  });
 });

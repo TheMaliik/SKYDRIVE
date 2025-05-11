@@ -1,0 +1,94 @@
+.finance-container {
+    padding: 2rem;
+    background-color: #f9f9f9;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    color: #333;
+  }
+  
+  h1 {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+    color: #1e3a8a;
+    text-align: center;
+  }
+  
+  .filtre-section {
+    display: flex;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+  
+  .filtre-section label {
+    font-weight: bold;
+    margin-right: 10px;
+  }
+  
+  .filtre-section select {
+    padding: 5px 10px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+  }
+  
+  .section {
+    margin-bottom: 2rem;
+    background: #fff;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  }
+  
+  .section h2 {
+    margin-bottom: 1rem;
+    color: #0f172a;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 0.5rem;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+  }
+  
+  table thead {
+    background-color: #e2e8f0;
+  }
+  
+  table th, table td {
+    padding: 10px;
+    text-align: left;
+    border: 1px solid #ccc;
+  }
+  
+  table tbody tr:nth-child(even) {
+    background-color: #f1f5f9;
+  }
+  
+  .bilan {
+    background-color: #fefefe;
+    padding: 1.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  
+  .bilan h2 {
+    margin-bottom: 1rem;
+    color: #0f172a;
+  }
+  
+  .bilan p {
+    font-size: 1.05rem;
+    margin: 0.5rem 0;
+  }
+  
+  .benefice {
+    color: green;
+    font-weight: bold;
+  }
+  
+  .perte {
+    color: red;
+    font-weight: bold;
+  }
+  

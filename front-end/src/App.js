@@ -1,42 +1,71 @@
-import React from 'react';
-import './styles/App.css';
-import StatCard from './components/StatCard';
-import Sidebar from './components/Sidebar';
-import AdminMenu from './components/AdminMenu';
+import { Routes, Route, Navigate } from "react-router-dom";
+import Login from './components/Login';
+import Layout from './components/layout'; 
+import Dashboard from './components/Dashboard';
+import GestionVehicules from './components/GestionVehicules';
+import GestionMaintenance from './components/GestionMaintenance';
+import GestionLocation from './components/GestionLocation';
+import GestionClient from './components/GestionClient';
+import AdminProfile from "./components/AdminProfile";
+import Calendar from "./components/Calendar";
+import GestionEmployes from './components/GestionEmployes';
+import Notification from  './components/Notifications';
+import Financial from "./components/Financial"; 
+import ResetPassword from "./components/ResetPassword";
+import ContratLocation from "./components/ContratLocation";
+import VehicleStatsDashboard from "./components/Statistiques";
+
+const PrivateRoute = ({ children }) => {
+  const isLoggedIn = localStorage.getItem("isLoggedIn");
+  return isLoggedIn === "true" ? children : <Navigate to="/login" />;
+};
 
 function App() {
   return (
-    <div className="dashboard">
-      <Sidebar />
-      
-      <div className="main-content">
-        <header className="header">
-          <h1>Tableau de bord</h1>
-          <div className="admin-menu-container">
-            <AdminMenu />
-          </div>
-        </header>
+    <Routes>
+      {/* Page login non protégée */}
+      <Route path="/login" element={<Login />} />
 
-        <div className="content-wrapper">
-          <div className="stat-cards">
-            <StatCard title="Total des véhicules" value="150" icon="🚗" />
-            <StatCard title="Entretiens à prévoir" value="30" icon="🔧" />
-            <StatCard title="Employés actifs" value="20" icon="👥" />
-            <StatCard title="Contrats" value="12" icon="📄" />
-            <StatCard title="Réservations" value="85%" icon="📅" />
-          </div>
+      {/* Route de réinitialisation du mot de passe, non protégée */}
+      <Route path="/reset-password/:token" element={<ResetPassword />} />
 
-          {/* Ajout de la section Performance du parc */}
-          <section className="performance">
-            <h3>Performance du parc</h3>
-            <div className="performance-status">
-              {/* L'espace ici sera pour des informations dynamiques sur le parc */}
-              <span>À venir : Données de performance du parc</span>
-            </div>
-          </section>
-        </div>
-      </div>
-    </div>
+      {/* Route protégée qui redirige vers le login si non connecté */}
+      <Route
+        path="/"
+        element={
+          <PrivateRoute>
+            <Navigate to="/login" />  {/* Rediriger vers /login par défaut */}
+          </PrivateRoute>
+        }
+      />
+
+      {/* Toutes les routes protégées avec layout */}
+      <Route
+        path="/"
+        element={
+          <PrivateRoute>
+            <Layout />
+          </PrivateRoute>
+        }
+      >
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="vehicules" element={<GestionVehicules />} />
+        <Route path="maintenance" element={<GestionMaintenance />} />
+        <Route path="location" element={<GestionLocation />} />
+        <Route path="client" element={<GestionClient />} />
+        <Route path="admin-profile" element={<AdminProfile />} />
+        <Route path="calendrier" element={<Calendar />} />
+        <Route path="gestion-employes" element={<GestionEmployes />} />
+        <Route path="notifications" element={<Notification />} />
+        <Route path="financial" element={<Financial />} />
+        <Route path="/contrat/:id" element={<ContratLocation />} />
+        
+        </Route>
+
+      {/* Redirection vers login pour toute autre route non définie */}
+      <Route path="*" element={<Navigate to="/login" />} />
+      <Route path="Statssss" element={<VehicleStatsDashboard />} />
+    </Routes>
   );
 }
 
