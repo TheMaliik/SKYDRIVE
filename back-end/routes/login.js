@@ -7,6 +7,8 @@ const User = require("../model/User"); // Adjust path to your User model
 const path = require('path');
 const mongoose = require('mongoose'); // Add mongoose import
 require("dotenv").config();
+const cloudinary = require('../config/cloudinary'); // Assuming your cloudinary config path
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
 
 
@@ -51,12 +53,13 @@ router.use(cors({
 }));
 
 // Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/'); // Ensure this directory exists
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
+// Configure Cloudinary storage for multer
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'user_photos', // Cloudinary folder name
+    allowed_formats: ['jpg', 'png', 'jpeg'],
+    transformation: [{ width: 500, height: 500, crop: 'limit' }], // Optional: resize images
   },
 });
 
@@ -71,12 +74,8 @@ const upload = multer({
   },
 });
 
-
-
-
-
-// Update profile information
-router.put('/edit/:id', async (req, res) => {
+// Update profile information with photo
+router.put('/edit/:id', upload.single('photo'), async (req, res) => {
   try {
     const userId = req.params.id;
 
@@ -103,6 +102,7 @@ router.put('/edit/:id', async (req, res) => {
       return res.status(400).json({ message: 'Email already in use' });
     }
 
+    // Update user fields
     user.nom = nom;
     user.prenom = prenom;
     user.email = email;
@@ -111,9 +111,33 @@ router.put('/edit/:id', async (req, res) => {
     user.ville = ville || '';
     user.cin = cin;
 
+    // Handle photo upload
+    if (req.file) {
+      // Delete old photo from Cloudinary if it exists
+      if (user.photo) {
+        const publicId = user.photo.split('/').pop().split('.')[0];
+        await cloudinary.uploader.destroy(`user_photos/${publicId}`);
+      }
+      // Store new photo URL
+      user.photo = req.file.path; // Cloudinary URL
+    }
+
     await user.save();
 
-    res.json({ message: 'Profile updated successfully' });
+    res.json({ 
+      message: 'Profile updated successfully',
+      user: {
+        _id: user._id,
+        nom: user.nom,
+        prenom: user.prenom,
+        email: user.email,
+        phone: user.phone,
+        address: user.address,
+        ville: user.ville,
+        cin: user.cin,
+        photo: user.photo
+      }
+    });
   } catch (err) {
     console.error('Error updating profile:', err);
     res.status(500).json({ message: 'Failed to update profile' });

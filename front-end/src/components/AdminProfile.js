@@ -38,6 +38,7 @@ const PasswordInput = ({ label, value, onChange, showPassword, toggleShowPasswor
 const AdminProfile = () => {
   const [profilePic, setProfilePic] = useState(null);
   const [tempPic, setTempPic] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null); // New state for file
   const [isEditing, setIsEditing] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -94,48 +95,15 @@ const AdminProfile = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleFileSelect = async (event) => {
+  const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (!file?.type.startsWith("image/")) {
       alert("Please select a valid image.");
       return;
     }
-
+    setSelectedFile(file);
     const preview = URL.createObjectURL(file);
     setTempPic({ file, preview });
-    setIsLoading(true);
-
-    try {
-      const userData = JSON.parse(localStorage.getItem("user") || "{}");
-      const userId = userData._id;
-      const token = localStorage.getItem("token");
-      const formData = new FormData();
-      formData.append("photo", file);
-
-      const response = await axios.put(
-        `http://localhost:5000/apiLogin/${userId}/photo`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-
-      setProfilePic(response.data.photo);
-      setTempPic(null);
-
-      // Update localStorage with new photo
-      localStorage.setItem("user", JSON.stringify({ ...userData, photo: response.data.photo }));
-
-      alert("Profile picture updated successfully!");
-    } catch (err) {
-      console.error("Error uploading photo:", err);
-      alert("Failed to update profile picture.");
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const handleProfileChange = (field) => (e) =>
@@ -163,28 +131,45 @@ const AdminProfile = () => {
     setIsLoading(true);
 
     try {
-      const userData = localStorage.getItem("user");
-      if (!userData) {
-        alert("No user data found. Please log in again.");
-        return;
-      }
-
-      const user = JSON.parse(userData);
-      const userId = user._id;
+      const userData = JSON.parse(localStorage.getItem("user") || "{}");
+      const userId = userData._id;
+      const token = localStorage.getItem("token");
 
       if (!userId || !/^[0-9a-fA-F]{24}$/.test(userId)) {
         alert("Invalid user ID. Please log in again.");
         return;
       }
 
-      await axios.put(
+      const formData = new FormData();
+      formData.append("nom", profile.nom);
+      formData.append("prenom", profile.prenom);
+      formData.append("email", profile.email);
+      formData.append("phone", profile.phone);
+      formData.append("address", profile.address);
+      formData.append("ville", profile.ville);
+      formData.append("cin", profile.cin);
+      if (selectedFile) {
+        formData.append("photo", selectedFile);
+      }
+
+      const response = await axios.put(
         `http://localhost:5000/apiLogin/edit/${userId}`,
-        profile
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
       );
 
       // Update localStorage with new profile data
-      localStorage.setItem("user", JSON.stringify({ ...user, ...profile }));
+      localStorage.setItem("user", JSON.stringify({ ...userData, ...response.data.user }));
 
+      // Update state with new photo
+      setProfilePic(response.data.user.photo || profilePic);
+      setTempPic(null);
+      setSelectedFile(null);
       setIsEditing(false);
       alert("Profile updated successfully!");
     } catch (err) {
@@ -217,6 +202,7 @@ const AdminProfile = () => {
     try {
       const userData = JSON.parse(localStorage.getItem("user") || "{}");
       const userId = userData._id;
+      const token = localStorage.getItem("token");
 
       if (!userId || !/^[0-9a-fA-F]{24}$/.test(userId)) {
         alert("Invalid user ID. Please log in again.");
@@ -227,6 +213,11 @@ const AdminProfile = () => {
         `http://localhost:5000/apiLogin/${userId}/password`,
         {
           newPassword: passwords.newPassword,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
 
@@ -259,14 +250,16 @@ const AdminProfile = () => {
               </div>
             )}
           </label>
-          <input
-            type="file"
-            id="profilePicInput"
-            accept="image/*"
-            onChange={handleFileSelect}
-            style={{ display: "none" }}
-            ref={fileInputRef}
-          />
+          {isEditing && (
+            <input
+              type="file"
+              id="profilePicInput"
+              accept="image/*"
+              onChange={handleFileChange}
+              style={{ display: "none" }}
+              ref={fileInputRef}
+            />
+          )}
         </div>
         <div className="user-details">
           {isEditing ? (
