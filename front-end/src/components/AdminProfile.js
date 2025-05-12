@@ -313,7 +313,7 @@ const AdminProfile = () => {
                 {errors.cin && <span className="error-message">{errors.cin}</span>}
               </div>
               <div className="input-group">
-                <label className="input-label">Phone</label>
+                <label className="input-label">Téléphone</label>
                 <input
                   type="text"
                   value={profile.phone}
@@ -323,7 +323,7 @@ const AdminProfile = () => {
                 />
               </div>
               <div className="input-group">
-                <label className="input-label">Address</label>
+                <label className="input-label">Addresse</label>
                 <input
                   type="text"
                   value={profile.address}
@@ -350,25 +350,25 @@ const AdminProfile = () => {
               </h2>
               <p className="user-info">{profile.email}</p>
               {profile.cin && <p className="user-info">CIN: {profile.cin}</p>}
-              {profile.phone && <p className="user-info">Phone: {profile.phone}</p>}
-              {profile.address && <p className="user-info">Address: {profile.address}</p>}
+              {profile.phone && <p className="user-info">Téléphone: {profile.phone}</p>}
+              {profile.address && <p className="user-info">Addresse: {profile.address}</p>}
               {profile.ville && <p className="user-info">Ville: {profile.ville}</p>}
             </>
           )}
         </div>
       </div>
 
-      <Section icon={<FaCog />} title="Profile Settings">
+      <Section icon={<FaCog />} title="Paramétres">
         <button
           onClick={() => (isEditing ? handleSaveProfile() : setIsEditing(true))}
           className="btn primary"
           disabled={isLoading}
         >
-          {isLoading ? "Saving..." : isEditing ? "Save Changes" : "Edit Profile"}
+          {isLoading ? "Saving..." : isEditing ? "Sauvegarder Profile" : "Modifier Profile"}
         </button>
       </Section>
 
-      <Section icon={<FaCog />} title="Security">
+      <Section icon={<FaCog />} title="Sécurité">
         {isChangingPassword ? (
           <div ref={passwordFormRef} className="password-form">
             <PasswordInput
@@ -401,7 +401,7 @@ const AdminProfile = () => {
             className="btn primary"
             disabled={isLoading}
           >
-            Change Password
+            Modifier Mot de Passe
           </button>
         )}
       </Section>

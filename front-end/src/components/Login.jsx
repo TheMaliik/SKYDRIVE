@@ -109,7 +109,7 @@ const Login = () => {
   return (
     <div className="login-main-container">
       <div className="login-form-box">
-        <h1><strong className="login-welcome-text">Welcome</strong> Back</h1>
+        <h1><strong className="login-welcome-text">Bienvenue</strong> </h1>
         <p className="login-info-message">Veuillez entrer vos informations pour vous connecter.</p>
 
         {!showResetForm ? (
