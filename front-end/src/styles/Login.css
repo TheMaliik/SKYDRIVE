@@ -1,222 +1,122 @@
-/* Login.css */
-
-
-
-
-
+/* Full-width and full-height background image */
 .login-main-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 100%;
-  padding: 20px;
-  position: relative;
-  z-index: 1;
+  min-height: 100vh; /* Full viewport height */
+  width: 100vw; /* Full viewport width */
+  background-image: url('../img/login.png'); /* Correct path for public/img */
+  background-size: cover; /* Ensure image covers the entire area */
+  background-position: center; /* Center the image */
+  background-repeat: no-repeat; /* Prevent repeating */
 }
 
+/* More transparent and wider form box */
 .login-form-box {
-  background: rgba(255, 255, 255, 0.95); /* Slightly translucent for better integration */
-  border-radius: 16px;
-  padding: 2.5rem;
+  background: rgba(255, 255, 255, 0.7); /* More transparent background */
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  max-width: 500px; /* Wider form */
   width: 100%;
-  max-width: 420px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.login-form-box:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
-}
-
-.login-welcome-text {
-  color: #1e40af;
-  font-weight: 700;
-}
-
-.login-title {
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
-  text-align: center;
-  color: #1f2937;
-}
-
-.login-info-message {
-  font-size: 0.95rem;
-  color: #374151;
-  text-align: center;
+/* Input wrapper styling */
+.login-input-wrapper {
+  position: relative;
   margin-bottom: 1.5rem;
 }
 
+/* Input field styling */
+.login-input-text {
+  width: 100%;
+  padding: 0.8rem 2.5rem 0.8rem 1rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+
+/* Input icon styling */
+.login-input-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #666;
+}
+
+/* Form styling */
 .login-form {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-.login-input-wrapper {
-  position: relative;
-  width: 100%;
-}
-
-.login-input-text {
-  width: 100%;
-  padding: 0.85rem 1rem 0.85rem 2.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  color: #1f2937;
-  background: #ffffff;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.login-input-text:focus {
-  outline: none;
-  border-color: #1e40af;
-  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.2);
-}
-
-.login-input-text::placeholder {
-  color: #9ca3af;
-}
-
-.login-input-icon {
-  position: absolute;
-  left: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #6b7280;
-  font-size: 1rem;
-  transition: color 0.2s ease;
-}
-
-.login-input-text:focus + .login-input-icon {
-  color: #1e40af;
-}
-
-.login-error-message {
-  color: #dc2626;
-  font-size: 0.85rem;
-  margin-top: 0.25rem;
-  text-align: center;
-}
-
+/* Submit button styling */
 .login-submit-button {
-  background: #1e40af;
-  color: #ffffff;
+  background-color: #007bff;
+  color: white;
+  padding: 0.8rem;
   border: none;
-  border-radius: 8px;
-  padding: 0.85rem;
+  border-radius: 5px;
   font-size: 1rem;
-  font-weight: 500;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.2s ease;
+  transition: background-color 0.3s;
 }
 
 .login-submit-button:hover {
-  background: #1e3a8a;
-  transform: translateY(-2px);
-}
-
-.login-submit-button:active {
-  transform: translateY(0);
+  background-color: #0056b3;
 }
 
 .login-submit-button:disabled {
-  background: #9ca3af;
+  background-color: #ccc;
   cursor: not-allowed;
 }
 
-.login-forgot-password-section {
-  margin-top: 1rem;
-  text-align: center;
+/* Welcome text styling */
+.login-welcome-text {
+  color: #007bff;
 }
 
-.login-forgot-password-text {
-  color: #1e40af;
+/* Info message styling */
+.login-info-message {
+  color: #666;
   font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Error message styling */
+.login-error-message {
+  color: red;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+/* Forgot password section */
+.login-forgot-password-section {
+  margin-top: 1rem;
+}
+
+/* Forgot password text */
+.login-forgot-password-text {
+  color: #007bff;
   cursor: pointer;
-  text-decoration: none;
-  transition: color 0.2s ease;
+  font-size: 0.9rem;
 }
 
 .login-forgot-password-text:hover {
-  color: #1e3a8a;
   text-decoration: underline;
 }
 
+/* Back to login link */
 .login-back-to-login {
-  margin-top: 1rem;
-  color: #374151;
-  font-size: 0.9rem;
+  color: #007bff;
   cursor: pointer;
-  text-align: center;
-  transition: color 0.2s ease;
+  font-size: 0.9rem;
+  margin-top: 1rem;
 }
 
 .login-back-to-login:hover {
-  color: #1e40af;
-}
-
-/* Responsive Design */
-@media (max-width: 480px) {
-  .login-form-box {
-    padding: 1.5rem;
-    max-width: 90%;
-  }
-
-  .login-title {
-    font-size: 1.75rem;
-  }
-
-  .login-info-message {
-    font-size: 0.9rem;
-  }
-
-  .login-input-text {
-    padding: 0.75rem 1rem 0.75rem 2.5rem;
-    font-size: 0.9rem;
-  }
-
-  .login-submit-button {
-    padding: 0.75rem;
-    font-size: 0.95rem;
-  }
-}
-
-/* Animations */
-@keyframes loginFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.login-form-box {
-  animation: loginFadeIn 0.5s ease-out;
-}
-
-/* Accessibility */
-.login-input-text:focus {
-  outline: 2px solid #1e40af;
-  outline-offset: 2px;
-}
-
-.login-submit-button:focus {
-  outline: 2px solid #1e40af;
-  outline-offset: 2px;
-}
-
-.login-forgot-password-text:focus {
-  outline: 2px solid #1e40af;
-  outline-offset: 2px;
-}
-
-.login-back-to-login:focus {
-  outline: 2px solid #1e40af;
-  outline-offset: 2px;
+  text-decoration: underline;
 }
