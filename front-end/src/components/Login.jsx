@@ -6,17 +6,17 @@ import "../styles/Login.css";
 import { API_AUTH } from "../api";
 
 const InputField = ({ type, placeholder, value, onChange, icon, onIconClick }) => (
-  <div className="input-container">
+  <div className="login-input-wrapper">
     <input
       type={type}
       placeholder={placeholder}
       value={value}
       onChange={onChange}
-      className="input-field"
+      className="login-input-text"
       required
     />
     <i
-      className={`fas ${icon} input-icon`}
+      className={`fas ${icon} login-input-icon`}
       onClick={onIconClick}
       aria-label="Toggle visibility"
       style={{ cursor: onIconClick ? "pointer" : "default" }}
@@ -78,7 +78,6 @@ const Login = () => {
       const decodedToken = jwtDecode(data.token);
       console.log("Decoded token:", decodedToken);
 
-      // Use GET with email as path parameter
       console.log("Sending user findByEmail request with email:", trimmedEmail);
       const userResponse = await axios.get(
         `http://localhost:5000/apiLogin/user/findByEmail/${encodeURIComponent(trimmedEmail)}`
@@ -108,14 +107,14 @@ const Login = () => {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-box">
-        <h1><strong className="welcome-text">Welcome</strong> Back</h1>
-        <p className="info-text">Veuillez entrer vos informations pour vous connecter.</p>
+    <div className="login-main-container">
+      <div className="login-form-box">
+        <h1><strong className="login-welcome-text">Welcome</strong> Back</h1>
+        <p className="login-info-message">Veuillez entrer vos informations pour vous connecter.</p>
 
         {!showResetForm ? (
           <>
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} className="login-form">
               <InputField
                 type="email"
                 placeholder="Email"
@@ -133,21 +132,21 @@ const Login = () => {
                 onIconClick={togglePasswordVisibility}
               />
 
-              {error && <p className="error-text">{error}</p>}
+              {error && <p className="login-error-message">{error}</p>}
 
-              <button type="submit" className="login-btn" disabled={loading}>
+              <button type="submit" className="login-submit-button" disabled={loading}>
                 {loading ? "Connexion..." : "Se connecter"}
               </button>
             </form>
 
-            <div className="forgot-password-container">
-              <p className="forgot-password-link" onClick={() => setShowResetForm(true)}>
+            <div className="login-forgot-password-section">
+              <p className="login-forgot-password-text" onClick={() => setShowResetForm(true)}>
                 Mot de passe oublié ?
               </p>
             </div>
           </>
         ) : (
-          <form onSubmit={handleResetPassword}>
+          <form onSubmit={handleResetPassword} className="login-form">
             <InputField
               type="email"
               placeholder="Entrez votre email"
@@ -156,15 +155,15 @@ const Login = () => {
               icon="fa-envelope"
             />
 
-            <button type="submit" className="login-btn" style={{ marginTop: "10px" }}>
+            <button type="submit" className="login-submit-button" style={{ marginTop: "10px" }}>
               Envoyer le lien de réinitialisation
             </button>
 
-            {resetMessage && <p className="info-text" style={{ marginTop: "10px" }}>{resetMessage}</p>}
+            {resetMessage && <p className="login-info-message" style={{ marginTop: "10px" }}>{resetMessage}</p>}
 
             <p
               onClick={() => setShowResetForm(false)}
-              style={{ marginTop: "10px", cursor: "pointer", color: "#555" }}
+              className="login-back-to-login"
             >
               ← Retour à la connexion
             </p>
