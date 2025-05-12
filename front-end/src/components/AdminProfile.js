@@ -48,14 +48,13 @@ const AdminProfile = () => {
     phone: "",
     address: "",
     ville: "",
+    cin: "",
   });
   const [passwords, setPasswords] = useState({
-    oldPassword: "",
     newPassword: "",
     confirmNewPassword: "",
   });
   const [showPasswords, setShowPasswords] = useState({
-    oldPassword: false,
     newPassword: false,
     confirmNewPassword: false,
   });
@@ -64,20 +63,21 @@ const AdminProfile = () => {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchProfile = () => {
       setIsLoading(true);
       try {
-        const userId = localStorage.getItem("userId");
-        const token = localStorage.getItem("token");
-        const response = await axios.get(`http://localhost:5000/api/users/${userId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const { nom, prenom, email, phone, address, ville, photo } = response.data;
-        setProfile({ nom, prenom, email, phone, address, ville });
-        setProfilePic(photo || null);
+        const userData = localStorage.getItem("user");
+        if (userData) {
+          const { nom, prenom, email, phone, address, ville, cin, photo } = JSON.parse(userData);
+          setProfile({ nom, prenom, email, phone, address, ville, cin });
+          setProfilePic(photo || null);
+        } else {
+          console.error("No user data found in localStorage");
+          alert("No profile data available. Please log in again.");
+        }
       } catch (err) {
-        console.error("Error fetching profile:", err);
-        alert("Failed to load profile.");
+        console.error("Error parsing profile data:", err);
+        alert("Failed to load profile data.");
       } finally {
         setIsLoading(false);
       }
@@ -90,7 +90,7 @@ const AdminProfile = () => {
         setIsChangingPassword(false);
       }
     };
-    document.addEventListener("mongoose", handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
@@ -106,13 +106,14 @@ const AdminProfile = () => {
     setIsLoading(true);
 
     try {
-      const userId = localStorage.getItem("userId");
+      const userData = JSON.parse(localStorage.getItem("user") || "{}");
+      const userId = userData._id;
       const token = localStorage.getItem("token");
       const formData = new FormData();
       formData.append("photo", file);
 
       const response = await axios.put(
-        `http://localhost:5000/api/users/${userId}/photo`,
+        `http://localhost:5000/apiLogin/${userId}/photo`,
         formData,
         {
           headers: {
@@ -124,6 +125,10 @@ const AdminProfile = () => {
 
       setProfilePic(response.data.photo);
       setTempPic(null);
+
+      // Update localStorage with new photo
+      localStorage.setItem("user", JSON.stringify({ ...userData, photo: response.data.photo }));
+
       alert("Profile picture updated successfully!");
     } catch (err) {
       console.error("Error uploading photo:", err);
@@ -148,6 +153,7 @@ const AdminProfile = () => {
     if (!profile.prenom) newErrors.prenom = "Prénom is required";
     if (!profile.email) newErrors.email = "Email is required";
     else if (!/\S+@\S+\.\S+/.test(profile.email)) newErrors.email = "Invalid email format";
+    if (!profile.cin) newErrors.cin = "CIN is required";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -157,20 +163,37 @@ const AdminProfile = () => {
     setIsLoading(true);
 
     try {
-      const userId = localStorage.getItem("userId");
-      const token = localStorage.getItem("token");
+      const userData = localStorage.getItem("user");
+      if (!userData) {
+        alert("No user data found. Please log in again.");
+        return;
+      }
+
+      const user = JSON.parse(userData);
+      const userId = user._id;
+
+      if (!userId || !/^[0-9a-fA-F]{24}$/.test(userId)) {
+        alert("Invalid user ID. Please log in again.");
+        return;
+      }
 
       await axios.put(
-        `http://localhost:5000/api/users/edit/${userId}`,
-        { ...profile, role: "admin" },
-        { headers: { Authorization: `Bearer ${token}` } }
+        `http://localhost:5000/apiLogin/edit/${userId}`,
+        profile
       );
+
+      // Update localStorage with new profile data
+      localStorage.setItem("user", JSON.stringify({ ...user, ...profile }));
 
       setIsEditing(false);
       alert("Profile updated successfully!");
     } catch (err) {
       console.error("Update error:", err);
-      alert(err.response?.data?.message || "Failed to update profile.");
+      alert(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to update profile. Please try again."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -178,7 +201,6 @@ const AdminProfile = () => {
 
   const validatePasswords = () => {
     const newErrors = {};
-    if (!passwords.oldPassword) newErrors.oldPassword = "Old password is required";
     if (!passwords.newPassword) newErrors.newPassword = "New password is required";
     else if (passwords.newPassword.length < 6)
       newErrors.newPassword = "Password must be at least 6 characters";
@@ -193,23 +215,27 @@ const AdminProfile = () => {
     setIsLoading(true);
 
     try {
-      const userId = localStorage.getItem("userId");
-      const token = localStorage.getItem("token");
+      const userData = JSON.parse(localStorage.getItem("user") || "{}");
+      const userId = userData._id;
+
+      if (!userId || !/^[0-9a-fA-F]{24}$/.test(userId)) {
+        alert("Invalid user ID. Please log in again.");
+        return;
+      }
 
       const response = await axios.put(
-        `http://localhost:5000/api/users/change-password/${userId}`,
+        `http://localhost:5000/apiLogin/${userId}/password`,
         {
-          oldPassword: passwords.oldPassword,
           newPassword: passwords.newPassword,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
+        }
       );
 
       alert(response.data.message);
-      setPasswords({ oldPassword: "", newPassword: "", confirmNewPassword: "" });
+      setPasswords({ newPassword: "", confirmNewPassword: "" });
       setIsChangingPassword(false);
       setErrors({});
     } catch (err) {
+      console.error("Password change error:", err);
       alert(err.response?.data?.message || "Failed to change password.");
     } finally {
       setIsLoading(false);
@@ -281,6 +307,18 @@ const AdminProfile = () => {
                 />
                 {errors.email && <span className="error-message">{errors.email}</span>}
               </div>
+              <div className={`input-group ${errors.cin ? "error" : ""}`}>
+                <label className="input-label">CIN *</label>
+                <input
+                  type="text"
+                  value={profile.cin}
+                  onChange={handleProfileChange("cin")}
+                  placeholder="CIN"
+                  className="edit-input"
+                  aria-invalid={errors.cin ? "true" : "false"}
+                />
+                {errors.cin && <span className="error-message">{errors.cin}</span>}
+              </div>
               <div className="input-group">
                 <label className="input-label">Phone</label>
                 <input
@@ -318,6 +356,7 @@ const AdminProfile = () => {
                 {profile.prenom} {profile.nom}
               </h2>
               <p className="user-info">{profile.email}</p>
+              {profile.cin && <p className="user-info">CIN: {profile.cin}</p>}
               {profile.phone && <p className="user-info">Phone: {profile.phone}</p>}
               {profile.address && <p className="user-info">Address: {profile.address}</p>}
               {profile.ville && <p className="user-info">Ville: {profile.ville}</p>}
@@ -339,14 +378,6 @@ const AdminProfile = () => {
       <Section icon={<FaCog />} title="Security">
         {isChangingPassword ? (
           <div ref={passwordFormRef} className="password-form">
-            <PasswordInput
-              label="Old Password"
-              value={passwords.oldPassword}
-              onChange={handlePasswordChange("oldPassword")}
-              showPassword={showPasswords.oldPassword}
-              toggleShowPassword={toggleShowPassword("oldPassword")}
-              error={errors.oldPassword}
-            />
             <PasswordInput
               label="New Password"
               value={passwords.newPassword}

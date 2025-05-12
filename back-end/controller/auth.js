@@ -49,6 +49,8 @@ exports.register = asyncHandler(async (req, res) => {
 
 
 
+
+
 // Connexion de l'utilisateur
 exports.login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
@@ -95,6 +97,15 @@ exports.login = asyncHandler(async (req, res) => {
     message: 'Connexion réussie'
   });
 });
+
+
+
+
+
+
+
+
+
 
 // Déconnexion de l'utilisateur
 exports.logout = asyncHandler(async (req, res) => {
@@ -174,6 +185,10 @@ exports.resetPassword = asyncHandler(async (req, res, next) => {
     message: 'Mot de passe réinitialisé avec succès'
   });
 });
+
+
+
+
 
 // Récupérer tous les utilisateurs (admin uniquement)
 exports.getAllUsers = asyncHandler(async (req, res) => {

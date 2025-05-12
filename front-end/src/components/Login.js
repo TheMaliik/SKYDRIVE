@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { jwtDecode } from "jwt-decode";
 import "../styles/Login.css";
 import { API_AUTH } from "../api";
 
@@ -40,8 +41,17 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!email || !password) {
+    console.log("Submitting with:", { email, password });
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password) {
       setError("Veuillez remplir tous les champs.");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      setError("Veuillez entrer un email valide.");
       return;
     }
 
@@ -49,19 +59,37 @@ const Login = () => {
     setError("");
 
     try {
-      const { data } = await axios.post(`${API_AUTH}/login`, { email, password });
+      console.log("Sending to:", `${API_AUTH}/login`);
+      const { data } = await axios.post(`${API_AUTH}/login`, {
+        email: trimmedEmail,
+        password,
+      });
+      console.log("Response:", data);
 
-      if (data.token) {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("role", data.role);
-
-        // Tous (admin ou employé) vont vers /dashboard
-        navigate("/dashboard");
+      if (!data.token) {
+        setError("Token non reçu. Veuillez réessayer.");
+        return;
       }
+
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("isLoggedIn", "true");
+      localStorage.setItem("role", data.role);
+
+      const decodedToken = jwtDecode(data.token);
+      console.log("Decoded token:", decodedToken);
+
+      // Use GET with email as path parameter
+      console.log("Sending user findByEmail request with email:", trimmedEmail);
+      const userResponse = await axios.get(
+        `http://localhost:5000/apiLogin/user/findByEmail/${encodeURIComponent(trimmedEmail)}`
+      );
+      console.log("User found:", userResponse.data);
+
+      localStorage.setItem("user", JSON.stringify(userResponse.data));
+      navigate("/dashboard");
     } catch (error) {
-      console.error("Erreur de connexion:", error.response?.data);
-      setError(error.response?.data?.message || "Identifiants incorrects.");
+      console.error("Erreur de connexion:", error.response?.data || error.message);
+      setError(error.response?.data?.message || "Une erreur s’est produite lors de la connexion.");
     } finally {
       setLoading(false);
     }
