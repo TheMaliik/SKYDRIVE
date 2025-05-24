@@ -1,0 +1,50 @@
+/* Financial Page Specific Card Styles */
+.financial-stat-card {
+  background: #e4f1f4;
+  border-radius: 12px;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.financial-stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+}
+
+.financial-stat-card .icon {
+  font-size: 2rem;
+  color: #007bff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.financial-stat-card .details {
+  flex: 1;
+}
+
+.financial-stat-card h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #263238;
+  margin-bottom: 0.25rem;
+}
+
+.financial-stat-card p {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #007bff;
+}
+
+.finance-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 0.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}

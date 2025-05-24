@@ -1,0 +1,135 @@
+/* Full-width and full-height background image */
+.login-main-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh; /* Full viewport height */
+  width: 100vw; /* Full viewport width */
+  background-image: url('../img/login.png'); /* Correct path for public/img */
+  background-size: cover; /* Ensure image covers the entire area */
+  background-position: center; /* Center the image */
+  background-repeat: no-repeat; /* Prevent repeating */
+}
+
+/* More transparent and wider form box */
+.login-form-box {
+  background: rgba(255, 255, 255, 0.7); /* More transparent background */
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  max-width: 500px; /* Wider form */
+  width: 100%;
+}
+
+/* Input wrapper styling */
+.login-input-wrapper {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+/* Input field styling */
+.login-input-text {
+  width: 100%;
+  padding: 0.8rem 2.5rem 0.8rem 1rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+
+/* Input icon styling */
+.login-input-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #666;
+}
+
+/* Form styling */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Submit button styling */
+.login-submit-button {
+  background-color: #007bff;
+  color: white;
+  padding: 0.8rem;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.login-submit-button:hover {
+  background-color: #0056b3;
+}
+
+.login-submit-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* Welcome text styling */
+.login-welcome-text {
+  color: #007bff;
+}
+
+/* Info message styling */
+.login-info-message {
+  color: #131928;
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Error message styling */
+.login-error-message {
+  color: red;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+/* Forgot password section */
+.login-forgot-password-section {
+  margin-top: 1rem;
+}
+
+/* Forgot password text */
+.login-forgot-password-text {
+  color: #007bff;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.login-forgot-password-text:hover {
+  text-decoration: underline;
+}
+
+/* Back to login link */
+.login-back-to-login {
+  color: #007bff;
+  cursor: pointer;
+  font-size: 0.9rem;
+  margin-top: 1rem;
+}
+
+.login-back-to-login:hover {
+  text-decoration: underline;
+}
+.password-wrapper {
+  position: relative;
+}
+
+.eye-icon {
+  position: absolute;
+  top: 50%;
+  right: 15px;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #666;
+  font-size: 1rem;
+}
