@@ -1,0 +1,172 @@
+
+/* General Dashboard Styling */
+.dashboard-wrapper {
+  background-color: #f4f6f8;
+  min-height: 100vh;
+}
+
+.dashboard-header {
+  background: linear-gradient(90deg, #1B263B 0%, #415A77 100%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-container {
+  padding: 24px;
+  max-width: 1800px;
+}
+
+/* Loading and Error States */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: #fff;
+}
+
+.error-container {
+  margin-top: 24px;
+}
+
+/* Chart Cards */
+.chart-card {
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.chart-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.chart-card .MuiTypography-h6 {
+  color: #1B263B;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+/* Prominent Chart Card (for Average Price per Day by Brand) */
+.chart-card-prominent {
+  background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+  padding: 24px;
+  border: 1px solid #e5e7eb;
+}
+
+.chart-card-prominent:hover {
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+}
+
+.chart-card-prominent .MuiTypography-h6 {
+  font-size: 1.5rem;
+  margin-bottom: 24px;
+}
+
+/* Revenue Card */
+.revenue-card {
+  background: linear-gradient(135deg, #00C4B4 0%, #48CAE4 100%);
+  color: #fff;
+  border-radius: 12px;
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+
+.revenue-card:hover {
+  transform: scale(1.05);
+}
+
+.revenue-card .MuiTypography-h6 {
+  color: #fff;
+  font-weight: 500;
+}
+
+.revenue-card .MuiTypography-h4 {
+  font-weight: 700;
+}
+
+/* Table Cards */
+.table-card {
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.table-card .MuiTypography-h6 {
+  color: #1B263B;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.data-table .MuiTableCell-root {
+  font-size: 14px;
+  color: #1B263B;
+}
+
+.data-table .MuiTableRow-root:hover {
+  background-color: #f1f5f9;
+}
+
+
+
+.MuiDialogContent-root {
+  padding: 16px;
+}
+
+/* Responsive Design */
+@media (max-width: 960px) {
+  .dashboard-container {
+    padding: 16px;
+  }
+
+  .chart-card,
+  .table-card {
+    padding: 12px;
+  }
+
+  .chart-card-prominent {
+    padding: 16px;
+  }
+
+  .revenue-card {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 600px) {
+  .dashboard-container {
+    padding: 12px;
+  }
+
+  .chart-card .MuiTypography-h6,
+  .table-card .MuiTypography-h6 {
+    font-size: 16px;
+  }
+
+  .chart-card-prominent .MuiTypography-h6 {
+    font-size: 1.25rem;
+  }
+
+  .data-table .MuiTableCell-root {
+    font-size: 12px;
+    padding: 8px;
+  }
+}
+
+/* ApexCharts Custom Tooltip */
+.apexcharts-tooltip-custom {
+  background: #1B263B;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.apexcharts-tooltip-custom .tooltip-label {
+  font-weight: 600;
+}
+
+.apexcharts-tooltip-custom .tooltip-value {
+  margin-left: 8px;
+}

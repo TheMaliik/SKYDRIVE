@@ -1,0 +1,344 @@
+/* GestionVehicules.css */
+
+/* Variables CSS pour le thème clair */
+:root {
+  --primary-color: #3498db;
+  --secondary-color: #2980b9;
+  --background-color: #f5f7fa;
+  --card-bg: #ffffff;
+  --text-color: #333333;
+  --text-light: #666666;
+  --border-color: #e0e0e0;
+  --error-color: #e74c3c;
+  --success-color: #2ecc71;
+  --warning-color: #f39c12;
+  --button-hover: #2874a6;
+  --table-header-bg: #3498db;
+  --table-header-text: #ffffff;
+  --table-row-odd: #f8f9fa;
+  --table-row-hover: #e9f7fe;
+  --box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+  --hover-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Dark mode */
+.dark-mode {
+  --primary-color: #3498db;
+  --secondary-color: #2980b9;
+  --background-color: #1a1a2e;
+  --card-bg: #16213e;
+  --text-color: #f0f0f0;
+  --text-light: #cccccc;
+  --border-color: #2c3e50;
+  --error-color: #e74c3c;
+  --success-color: #2ecc71;
+  --warning-color: #f39c12;
+  --button-hover: #2874a6;
+  --table-header-bg: #2980b9;
+  --table-header-text: #ffffff;
+  --table-row-odd: #1e2a3a;
+  --table-row-hover: #2c3e50;
+  --box-shadow: 0 4px 12px rgba(255, 255, 255, 0.04);
+  --hover-shadow: 0 6px 16px rgba(255, 255, 255, 0.06);
+}
+
+.gestion-vehicules {
+  padding: 20px;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  min-height: calc(100vh - 60px);
+  transition: all 0.3s ease;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.gestion-vehicules h2 {
+  color: var(--primary-color);
+  font-size: 2rem;
+  margin-bottom: 25px;
+  border-bottom: 3px solid var(--primary-color);
+  padding-bottom: 10px;
+  font-weight: 600;
+}
+
+.error, .success {
+  padding: 12px 20px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  color: white;
+  animation: fadeIn 0.4s ease-in-out;
+}
+
+.error { 
+  background-color: var(--error-color); 
+}
+.success { 
+  background-color: var(--success-color); 
+}
+
+.error-text {
+  color: var(--error-color);
+  font-size: 0.8rem;
+  margin-top: 5px;
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Controls */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 20px;
+  align-items: center;
+}
+
+.controls input[type="text"],
+.controls input[type="number"],
+.controls select {
+  flex: 1;
+  padding: 10px;
+  min-width: 200px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background-color: var(--card-bg);
+  color: var(--text-color);
+  transition: all 0.3s ease;
+  box-shadow: var(--box-shadow);
+}
+
+.controls input:focus,
+.controls select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+
+.controls button {
+  padding: 10px 18px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: var(--box-shadow);
+}
+
+.controls button:hover {
+  background-color: var(--button-hover);
+  box-shadow: var(--hover-shadow);
+}
+
+.price-filters {
+  display: flex;
+  gap: 10px;
+}
+
+.price-filters input {
+  max-width: 100px;
+}
+
+/* Formulaire */
+form {
+  background-color: var(--card-bg);
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: var(--box-shadow);
+  border: 1px solid var(--border-color);
+  margin-bottom: 30px;
+  transition: all 0.3s ease;
+}
+
+form h3 {
+  color: var(--primary-color);
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 18px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background-color: var(--card-bg);
+  color: var(--text-color);
+  transition: border 0.3s;
+}
+
+.form-group input.error {
+  border-color: var(--error-color);
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.form-actions button {
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  box-shadow: var(--box-shadow);
+  border: none;
+}
+
+.form-actions button[type="submit"] {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.form-actions button[type="submit"]:hover {
+  background-color: var(--button-hover);
+}
+
+.form-actions button[type="button"] {
+  background-color: var(--border-color);
+  color: var(--text-color);
+}
+
+.form-actions button[type="button"]:hover {
+  background-color: #d0d0d0;
+}
+
+/* Table */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--card-bg);
+  box-shadow: var(--box-shadow);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 20px;
+}
+
+table th {
+  background-color: var(--table-header-bg);
+  color: var(--table-header-text);
+  padding: 12px 15px;
+  text-align: left;
+  font-weight: 600;
+  transition: none !important; /* Disable hover animation */
+}
+
+table th:hover {
+  background-color: var(--table-header-bg) !important; /* Keep blue on hover */
+  cursor: default !important; /* Optional: disable pointer cursor */
+}
+
+table td {
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-color);
+}
+
+table tr:nth-child(even) {
+  background-color: var(--table-row-odd);
+}
+
+table tr:hover {
+  background-color: var(--table-row-hover);
+}
+
+table button {
+  padding: 6px 12px;
+  margin-right: 5px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  transition: 0.3s;
+  font-size: 0.9rem;
+}
+
+table button:first-child {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+table button:first-child:hover {
+  background-color: var(--button-hover);
+}
+
+table button:last-child {
+  background-color: var(--error-color);
+  color: white;
+}
+
+table button:last-child:hover {
+  background-color: #c0392b;
+}
+
+.loading,
+.no-results {
+  text-align: center;
+  padding: 25px;
+  font-size: 1.1rem;
+  color: var(--text-light);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .price-filters {
+    width: 100%;
+  }
+
+  .price-filters input {
+    max-width: none;
+    width: 100%;
+  }
+
+  form {
+    padding: 15px;
+  }
+
+  table {
+    display: block;
+    overflow-x: auto;
+  }
+
+  table button {
+    margin-bottom: 5px;
+  }
+}
+
+@media (max-width: 480px) {
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .form-actions button {
+    width: 100%;
+  }
+}
+
+
+
+
+
+/* Add By M*/
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
